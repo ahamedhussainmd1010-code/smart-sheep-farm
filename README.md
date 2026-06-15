@@ -1,5 +1,7 @@
 # Smart Sheep Farm 🐑
 
+![Smart Sheep Farm - Real Sheep](real_sheep.png)
+
 Smart Sheep Farm is a premium, high-fidelity native Android application built with **Kotlin** and **Jetpack Compose**. It is designed specifically for sheep and goat farmers to manage their livestock, vaccinations, deworming, breeding, feeding, and financial records with intelligence and ease.
 
 The application is engineered with an **offline-first architecture**, utilizing local SQLite storage to ensure farmers can access and log critical data in remote locations with zero network connectivity.
