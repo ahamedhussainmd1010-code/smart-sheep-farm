@@ -1,0 +1,82 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Sheep Fluffy Body (Overlapping circles) -->
+    <!-- Top-left puff -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M 38, 44 m -16, 0 a 16,16 0 1,1 32,0 a 16,16 0 1,1 -32,0" />
+    <!-- Top-right puff -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M 70, 44 m -16, 0 a 16,16 0 1,1 32,0 a 16,16 0 1,1 -32,0" />
+    <!-- Bottom-left puff -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M 38, 62 m -16, 0 a 16,16 0 1,1 32,0 a 16,16 0 1,1 -32,0" />
+    <!-- Bottom-right puff -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M 70, 62 m -16, 0 a 16,16 0 1,1 32,0 a 16,16 0 1,1 -32,0" />
+    <!-- Center-top puff -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M 54, 36 m -16, 0 a 16,16 0 1,1 32,0 a 16,16 0 1,1 -32,0" />
+    <!-- Center-bottom puff -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M 54, 72 m -16, 0 a 16,16 0 1,1 32,0 a 16,16 0 1,1 -32,0" />
+    <!-- Center puff -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M 54, 54 m -20, 0 a 20,20 0 1,1 40,0 a 20,20 0 1,1 -40,0" />
+
+    <!-- Head and Ears Group -->
+    <!-- Ears -->
+    <!-- Left Ear -->
+    <path
+        android:fillColor="#FF2E3033"
+        android:pathData="M 42,46 C 32,46 26,52 32,56 C 36,58 40,54 42,50 Z" />
+    <!-- Right Ear -->
+    <path
+        android:fillColor="#FF2E3033"
+        android:pathData="M 66,46 C 76,46 82,52 76,56 C 72,58 68,54 66,50 Z" />
+
+    <!-- Face (Head) -->
+    <path
+        android:fillColor="#FF2E3033"
+        android:pathData="M 42,46 C 42,38 66,38 66,46 C 66,56 62,66 54,66 C 46,66 42,56 42,46 Z" />
+
+    <!-- Little Tuft of Wool on Forehead -->
+    <!-- Center tuft -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M 54, 34 m -6, 0 a 6,6 0 1,1 12,0 a 6,6 0 1,1 -12,0" />
+    <!-- Left tuft -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M 48, 35 m -5, 0 a 5,5 0 1,1 10,0 a 5,5 0 1,1 -10,0" />
+    <!-- Right tuft -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M 60, 35 m -5, 0 a 5,5 0 1,1 10,0 a 5,5 0 1,1 -10,0" />
+
+    <!-- Eyes (White dots) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M 49, 48 m -2, 0 a 2,2 0 1,1 4,0 a 2,2 0 1,1 -4,0" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M 59, 48 m -2, 0 a 2,2 0 1,1 4,0 a 2,2 0 1,1 -4,0" />
+
+    <!-- Cute Mouth/Nose Line -->
+    <path
+        android:strokeColor="#FFFFB3B3"
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round"
+        android:pathData="M 52,55 L 56,55 M 54,55 L 54,58 C 54,60 53,61 52,61 M 54,58 C 54,60 55,61 56,61" />
+
+</vector>

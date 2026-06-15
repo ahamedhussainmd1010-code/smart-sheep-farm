@@ -1,0 +1,440 @@
+package com.example.myapplication2sheepfarm
+
+import android.app.Application
+import android.util.Log
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+
+enum class AlertType {
+    INFO, WARNING, CRITICAL
+}
+
+data class FarmAlert(
+    val id: String,
+    val title: String,
+    val message: String,
+    val type: AlertType,
+    val dateStr: String
+)
+
+class FarmViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val dbHelper = DatabaseHelper(application)
+
+    // State Flows for database records
+    private val _animals = MutableStateFlow<List<Animal>>(emptyList())
+    val animals: StateFlow<List<Animal>> = _animals.asStateFlow()
+
+    private val _vaccinationRecords = MutableStateFlow<List<VaccinationRecord>>(emptyList())
+    val vaccinationRecords: StateFlow<List<VaccinationRecord>> = _vaccinationRecords.asStateFlow()
+
+    private val _dewormingRecords = MutableStateFlow<List<DewormingRecord>>(emptyList())
+    val dewormingRecords: StateFlow<List<DewormingRecord>> = _dewormingRecords.asStateFlow()
+
+    private val _breedingRecords = MutableStateFlow<List<BreedingRecord>>(emptyList())
+    val breedingRecords: StateFlow<List<BreedingRecord>> = _breedingRecords.asStateFlow()
+
+    private val _feedInventory = MutableStateFlow<List<FeedInventory>>(emptyList())
+    val feedInventory: StateFlow<List<FeedInventory>> = _feedInventory.asStateFlow()
+
+    private val _feedSchedules = MutableStateFlow<List<FeedSchedule>>(emptyList())
+    val feedSchedules: StateFlow<List<FeedSchedule>> = _feedSchedules.asStateFlow()
+
+    private val _feedConsumption = MutableStateFlow<List<FeedConsumption>>(emptyList())
+    val feedConsumption: StateFlow<List<FeedConsumption>> = _feedConsumption.asStateFlow()
+
+    private val _financialRecords = MutableStateFlow<List<FinancialRecord>>(emptyList())
+    val financialRecords: StateFlow<List<FinancialRecord>> = _financialRecords.asStateFlow()
+
+    // Active Alerts State Flow
+    private val _alerts = MutableStateFlow<List<FarmAlert>>(emptyList())
+    val alerts: StateFlow<List<FarmAlert>> = _alerts.asStateFlow()
+
+    // Current Virtual / System Date for demonstration purposes (allows testing schedule changes)
+    private val _currentDate = MutableStateFlow("2026-06-16")
+    val currentDate: StateFlow<String> = _currentDate.asStateFlow()
+
+    // Connection Sync State simulation
+    private val _isOnline = MutableStateFlow(true)
+    val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
+
+    private val _syncMessage = MutableStateFlow("Database synced locally (Offline Mode ready)")
+    val syncMessage: StateFlow<String> = _syncMessage.asStateFlow()
+
+    // List of annual schedules
+    val annualSchedules = listOf(
+        VaccinationSchedule("02-05", "FMD Vaccination", "Foot and Mouth Disease", true),
+        VaccinationSchedule("03-05", "Sheep & Goat Pox Vaccination", "Capripoxvirus (Pox)", false),
+        VaccinationSchedule("04-05", "HS Vaccination", "Hemorrhagic Septicemia", true),
+        VaccinationSchedule("05-05", "ET + TT Vaccination", "Enterotoxemia + Tetanus Toxoid", false),
+        VaccinationSchedule("07-05", "Bluetongue Vaccination", "Bluetongue Virus", true),
+        VaccinationSchedule("08-05", "FMD Vaccination", "Foot and Mouth Disease Boost", false),
+        VaccinationSchedule("09-05", "PPR Vaccination", "Peste des Petits Ruminants", true),
+        VaccinationSchedule("10-05", "HS Vaccination", "Hemorrhagic Septicemia", false),
+        VaccinationSchedule("11-05", "ET + TT Vaccination", "Enterotoxemia + Tetanus Toxoid Boost", true)
+    )
+
+    init {
+        loadData()
+    }
+
+    fun loadData() {
+        viewModelScope.launch {
+            _animals.value = dbHelper.getAllAnimals()
+            _vaccinationRecords.value = dbHelper.getAllVaccinationRecords()
+            _dewormingRecords.value = dbHelper.getAllDewormingRecords()
+            _breedingRecords.value = dbHelper.getAllBreedingRecords()
+            _feedInventory.value = dbHelper.getAllFeedInventory()
+            _feedSchedules.value = dbHelper.getAllFeedSchedules()
+            _feedConsumption.value = dbHelper.getAllFeedConsumption()
+            _financialRecords.value = dbHelper.getAllFinancialRecords()
+
+            generateAlerts()
+        }
+    }
+
+    // Toggle simulated internet state
+    fun toggleConnection() {
+        _isOnline.value = !_isOnline.value
+        if (_isOnline.value) {
+            _syncMessage.value = "Data synchronized successfully with server!"
+        } else {
+            _syncMessage.value = "Offline mode active. Saving data locally."
+        }
+    }
+
+    // Change current simulated date to test schedule alerts
+    fun setSimulatedDate(newDate: String) {
+        // Validate date format YYYY-MM-DD
+        try {
+            val df = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+            df.parse(newDate)
+            _currentDate.value = newDate
+            generateAlerts()
+        } catch (e: Exception) {
+            Log.e("FarmViewModel", "Invalid date format: $newDate")
+        }
+    }
+
+    // Dynamic Alert Generator based on vaccination schedule and logs
+    private fun generateAlerts() {
+        val alertList = mutableListOf<FarmAlert>()
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        val curDateStr = _currentDate.value
+
+        val todayDate: Date = try {
+            sdf.parse(curDateStr) ?: Date()
+        } catch (e: Exception) {
+            Date()
+        }
+
+        val calToday = Calendar.getInstance()
+        calToday.time = todayDate
+        val currentYear = calToday.get(Calendar.YEAR)
+
+        val animalsList = _animals.value
+        val vRecords = _vaccinationRecords.value
+        val dRecords = _dewormingRecords.value
+
+        // Loop through the 9 scheduled vaccination events
+        annualSchedules.forEach { schedule ->
+            val targetDateStr = "$currentYear-${schedule.dateMonthDay}"
+            val targetDate = sdf.parse(targetDateStr) ?: return@forEach
+
+            val diffMs = targetDate.time - todayDate.time
+            val diffDays = (diffMs / (1000 * 60 * 60 * 24)).toInt()
+
+            // 1. Reminders before date
+            if (diffDays == 7) {
+                alertList.add(
+                    FarmAlert(
+                        id = "rem_7_${schedule.dateMonthDay}",
+                        title = "Vaccination Reminder (In 7 Days)",
+                        message = "${schedule.vaccineName} for ${schedule.targetDisease} is scheduled on $targetDateStr.",
+                        type = AlertType.INFO,
+                        dateStr = targetDateStr
+                    )
+                )
+            } else if (diffDays == 1) {
+                alertList.add(
+                    FarmAlert(
+                        id = "rem_1_${schedule.dateMonthDay}",
+                        title = "Vaccination Alert (Tomorrow)",
+                        message = "${schedule.vaccineName} is due tomorrow ($targetDateStr). Prepare livestock records.",
+                        type = AlertType.WARNING,
+                        dateStr = targetDateStr
+                    )
+                )
+            } else if (diffDays == 0) {
+                alertList.add(
+                    FarmAlert(
+                        id = "rem_0_${schedule.dateMonthDay}",
+                        title = "Vaccination Day!",
+                        message = "${schedule.vaccineName} is due TODAY ($targetDateStr). Remember to log details after administration.",
+                        type = AlertType.CRITICAL,
+                        dateStr = targetDateStr
+                    )
+                )
+            }
+
+            // 2. Alerts for Missed Vaccinations
+            // If the schedule date is in the past (more than 1 day ago)
+            if (diffDays < 0 && animalsList.isNotEmpty()) {
+                // Check if any vaccination record matches this vaccineName administered within targetDate ± 7 days
+                val dateStart = Calendar.getInstance().apply {
+                    time = targetDate
+                    add(Calendar.DAY_OF_YEAR, -5)
+                }.time
+                val dateEnd = Calendar.getInstance().apply {
+                    time = targetDate
+                    add(Calendar.DAY_OF_YEAR, 10)
+                }.time
+
+                // Calculate percentage of animals vaccinated
+                val vaccinatedCount = animalsList.count { animal ->
+                    vRecords.any { rec ->
+                        rec.animalId == animal.id &&
+                                rec.vaccineName.contains(schedule.vaccineName.split(" ")[0], ignoreCase = true) &&
+                                isDateWithinRange(rec.dateAdministered, dateStart, dateEnd)
+                    }
+                }
+
+                if (vaccinatedCount < animalsList.size) {
+                    val missedCount = animalsList.size - vaccinatedCount
+                    alertList.add(
+                        FarmAlert(
+                            id = "miss_${schedule.dateMonthDay}",
+                            title = "Missed Vaccination",
+                            message = "${schedule.vaccineName} scheduled on $targetDateStr has pending records ($vaccinatedCount/${animalsList.size} administered). $missedCount animals missed.",
+                            type = AlertType.CRITICAL,
+                            dateStr = targetDateStr
+                        )
+                    )
+                }
+            }
+
+            // 3. Alerts for Pending Deworming
+            // If schedule requires deworming and we are on or past the vaccination date
+            if (schedule.dewormingRequired && diffDays <= 0 && animalsList.isNotEmpty()) {
+                val dateDewormStart = targetDate // Deworming scheduled on or after vaccine date
+                val dateDewormEnd = Calendar.getInstance().apply {
+                    time = targetDate
+                    add(Calendar.DAY_OF_YEAR, 14) // Within 14 days after vaccine
+                }.time
+
+                val dewormedCount = animalsList.count { animal ->
+                    dRecords.any { rec ->
+                        rec.animalId == animal.id &&
+                                isDateWithinRange(rec.dateAdministered, dateDewormStart, dateDewormEnd)
+                    }
+                }
+
+                if (dewormedCount < animalsList.size) {
+                    val pendingDeworm = animalsList.size - dewormedCount
+                    // Only show alert if it is on or after the scheduled date
+                    alertList.add(
+                        FarmAlert(
+                            id = "deworm_${schedule.dateMonthDay}",
+                            title = "Pending Deworming Alert",
+                            message = "Deworming activity scheduled for ${schedule.vaccineName} ($targetDateStr) is pending for $pendingDeworm animals.",
+                            type = AlertType.WARNING,
+                            dateStr = targetDateStr
+                        )
+                    )
+                }
+            }
+        }
+
+        // 4. Low stock feed alerts
+        _feedInventory.value.forEach { feed ->
+            if (feed.quantityInStock <= feed.lowStockThreshold) {
+                alertList.add(
+                    FarmAlert(
+                        id = "feed_low_${feed.id}",
+                        title = "Low Feed Stock Alert",
+                        message = "${feed.feedName} has only ${feed.quantityInStock}${feed.unit} left (Threshold: ${feed.lowStockThreshold}${feed.unit}).",
+                        type = AlertType.WARNING,
+                        dateStr = curDateStr
+                    )
+                )
+            }
+        }
+
+        _alerts.value = alertList
+    }
+
+    private fun isDateWithinRange(dateToCheckStr: String, start: Date, end: Date): Boolean {
+        return try {
+            val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+            val date = sdf.parse(dateToCheckStr)
+            date != null && !date.before(start) && !date.after(end)
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    // ==========================================
+    // ANIMAL OPERATIONS
+    // ==========================================
+    fun addAnimal(tag: String, type: AnimalType, breed: String, gender: Gender, ageCat: AgeCategory, weight: Float, health: String, pDate: String, pPrice: Float, avatar: Int) {
+        viewModelScope.launch {
+            val animal = Animal(
+                tagNumber = tag,
+                type = type,
+                breed = breed,
+                gender = gender,
+                ageCategory = ageCat,
+                weight = weight,
+                healthStatus = health,
+                purchaseDate = pDate,
+                purchasePrice = pPrice,
+                avatarId = avatar
+            )
+            dbHelper.insertAnimal(animal)
+            loadData()
+        }
+    }
+
+    fun removeAnimal(id: Long) {
+        viewModelScope.launch {
+            dbHelper.deleteAnimal(id)
+            loadData()
+        }
+    }
+
+    // ==========================================
+    // HEALTH LOG OPERATIONS
+    // ==========================================
+    fun logVaccination(animalId: Long, vaccine: String, date: String, notes: String) {
+        viewModelScope.launch {
+            dbHelper.insertVaccinationRecord(
+                VaccinationRecord(animalId = animalId, vaccineName = vaccine, dateAdministered = date, notes = notes)
+            )
+            loadData()
+        }
+    }
+
+    fun logDeworming(animalId: Long, drug: String, date: String, notes: String) {
+        viewModelScope.launch {
+            dbHelper.insertDewormingRecord(
+                DewormingRecord(animalId = animalId, drugUsed = drug, dateAdministered = date, notes = notes)
+            )
+            loadData()
+        }
+    }
+
+    // ==========================================
+    // BREEDING OPERATIONS
+    // ==========================================
+    fun logBreeding(femaleId: Long, maleId: Long, date: String, status: PregnancyStatus, notes: String) {
+        viewModelScope.launch {
+            // Estimate delivery date: sheep/goats gestation is approx 150 days (5 months)
+            val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+            val breedDate = sdf.parse(date) ?: Date()
+            val cal = Calendar.getInstance().apply {
+                time = breedDate
+                add(Calendar.DAY_OF_YEAR, 150)
+            }
+            val expectedDel = sdf.format(cal.time)
+
+            dbHelper.insertBreedingRecord(
+                BreedingRecord(
+                    femaleId = femaleId,
+                    maleId = maleId,
+                    breedingDate = date,
+                    expectedDeliveryDate = expectedDel,
+                    status = status,
+                    notes = notes
+                )
+            )
+            loadData()
+        }
+    }
+
+    fun recordDelivery(record: BreedingRecord, deliveryDate: String, offspringCount: Int, notes: String) {
+        viewModelScope.launch {
+            // Update breeding record status
+            val status = if (animals.value.find { it.id == record.femaleId }?.type == AnimalType.SHEEP) PregnancyStatus.LAMBED else PregnancyStatus.KIDDED
+            val updatedRecord = record.copy(
+                status = status,
+                birthDate = deliveryDate,
+                offspringCount = offspringCount,
+                notes = notes
+            )
+            dbHelper.updateBreedingRecord(updatedRecord)
+
+            // Register offspring in Animals table
+            val mother = animals.value.find { it.id == record.femaleId }
+            if (mother != null) {
+                for (i in 1..offspringCount) {
+                    val offspringTag = "${if (mother.type == AnimalType.SHEEP) "SH" else "GT"}-B${record.id}-$i"
+                    dbHelper.insertAnimal(
+                        Animal(
+                            tagNumber = offspringTag,
+                            type = mother.type,
+                            breed = mother.breed,
+                            gender = if (i % 2 == 0) Gender.FEMALE else Gender.MALE,
+                            ageCategory = AgeCategory.BABY.name.let { AgeCategory.BABY },
+                            weight = 3.5f,
+                            healthStatus = "Healthy",
+                            purchaseDate = deliveryDate,
+                            purchasePrice = 0f,
+                            avatarId = if (mother.type == AnimalType.SHEEP) 0 else 2
+                        )
+                    )
+                }
+            }
+            loadData()
+        }
+    }
+
+    // ==========================================
+    // FEEDING OPERATIONS
+    // ==========================================
+    fun addFeedInventory(feedName: String, qty: Float, unit: String, lowThreshold: Float) {
+        viewModelScope.launch {
+            dbHelper.insertFeedInventory(
+                FeedInventory(feedName = feedName, quantityInStock = qty, unit = unit, lowStockThreshold = lowThreshold)
+            )
+            loadData()
+        }
+    }
+
+    fun logFeedConsumption(feedName: String, qty: Float, date: String) {
+        viewModelScope.launch {
+            dbHelper.insertFeedConsumption(
+                FeedConsumption(date = date, feedName = feedName, quantityConsumed = qty)
+            )
+            loadData()
+        }
+    }
+
+    fun addFeedSchedule(feedName: String, time: String, qty: Float, group: String) {
+        viewModelScope.launch {
+            dbHelper.insertFeedSchedule(
+                FeedSchedule(feedName = feedName, timeOfDay = time, quantity = qty, targetGroup = group)
+            )
+            loadData()
+        }
+    }
+
+    // ==========================================
+    // FINANCIAL OPERATIONS
+    // ==========================================
+    fun addFinancialRecord(type: TransactionType, category: TransactionCategory, amount: Float, date: String, desc: String) {
+        viewModelScope.launch {
+            dbHelper.insertFinancialRecord(
+                FinancialRecord(type = type, category = category, amount = amount, date = date, description = desc)
+            )
+            loadData()
+        }
+    }
+}
