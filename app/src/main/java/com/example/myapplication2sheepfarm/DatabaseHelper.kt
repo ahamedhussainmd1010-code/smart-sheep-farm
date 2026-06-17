@@ -11,7 +11,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
     companion object {
         private const val TAG = "DatabaseHelper"
         private const val DATABASE_NAME = "smart_sheep_farm.db"
-        private const val DATABASE_VERSION = 3
+        private const val DATABASE_VERSION = 4
 
         // Table Names
         private const val TABLE_ANIMALS = "animals"
@@ -27,13 +27,10 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         // Common Column
         private const val KEY_ID = "id"
 
-        // Users Columns
-        private const val KEY_USER_NAME = "username"
-        private const val KEY_USER_PASSWORD_HASH = "password_hash"
+        // Users Columns (OTP-based, no password)
+        private const val KEY_USER_FULL_NAME = "full_name"
         private const val KEY_USER_EMAIL = "email"
         private const val KEY_USER_PHONE = "phone"
-
-
 
         // Animals Columns
         private const val KEY_ANIMAL_TAG = "tag_number"
@@ -171,13 +168,12 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 + KEY_FIN_DESC + " TEXT" + ")")
         db.execSQL(createFinancesTable)
 
-        // Create Users Table
+        // Create Users Table (OTP-based: no password stored)
         val createUsersTable = ("CREATE TABLE " + TABLE_USERS + "("
                 + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
-                + KEY_USER_NAME + " TEXT UNIQUE,"
-                + KEY_USER_PASSWORD_HASH + " TEXT,"
-                + KEY_USER_EMAIL + " TEXT,"
-                + KEY_USER_PHONE + " TEXT" + ")")
+                + KEY_USER_FULL_NAME + " TEXT,"
+                + KEY_USER_EMAIL + " TEXT UNIQUE,"
+                + KEY_USER_PHONE + " TEXT UNIQUE" + ")")
         db.execSQL(createUsersTable)
 
         // Seed data
@@ -370,7 +366,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             },
             ContentValues().apply {
                 put(KEY_BREEDING_FEMALE_ID, 4L) // GT-001 Boer Female
-                put(KEY_BREEDING_MALE_ID, 6L) // GT-003 Boer Male (seeded as baby but represents buck)
+                put(KEY_BREEDING_MALE_ID, 6L) // GT-003 Boer Male
                 put(KEY_BREEDING_DATE, "2026-02-05")
                 put(KEY_BREEDING_EXPECTED_DELIVERY, "2026-07-05")
                 put(KEY_BREEDING_STATUS, PregnancyStatus.PREGNANT.name)
@@ -408,15 +404,6 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             }
         )
         pastDewormings.forEach { db.insert(TABLE_DEWORMINGS, null, it) }
-
-        // 8. Seed default admin user
-        val adminUser = ContentValues().apply {
-            put(KEY_USER_NAME, "admin")
-            put(KEY_USER_PASSWORD_HASH, hashPassword("admin123"))
-            put(KEY_USER_EMAIL, "admin@sheepfarm.com")
-            put(KEY_USER_PHONE, "+91 98765 43210")
-        }
-        db.insert(TABLE_USERS, null, adminUser)
     }
 
 
@@ -776,49 +763,42 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
     }
 
     // ==========================================
-    // USER AUTHENTICATION OPERATIONS
+    // USER AUTHENTICATION OPERATIONS (OTP-based)
     // ==========================================
 
-    private fun hashPassword(password: String): String {
-        return try {
-            val digest = java.security.MessageDigest.getInstance("SHA-256")
-            val hash = digest.digest(password.toByteArray(Charsets.UTF_8))
-            val hexString = StringBuilder()
-            for (b in hash) {
-                val hex = Integer.toHexString(0xff and b.toInt())
-                if (hex.length == 1) hexString.append('0')
-                hexString.append(hex)
-            }
-            hexString.toString()
-        } catch (ex: Exception) {
-            password
-        }
-    }
-
-    fun registerUser(username: String, email: String, phone: String, password: String): Long {
+    /**
+     * Register a new user with full name, email and phone.
+     * Returns the new user's row ID, or -1 if failed (duplicate email/phone).
+     */
+    fun registerUser(fullName: String, email: String, phone: String): Long {
         val db = this.writableDatabase
         val values = ContentValues().apply {
-            put(KEY_USER_NAME, username.trim())
-            put(KEY_USER_EMAIL, email.trim())
+            put(KEY_USER_FULL_NAME, fullName.trim())
+            put(KEY_USER_EMAIL, email.trim().lowercase())
             put(KEY_USER_PHONE, phone.trim())
-            put(KEY_USER_PASSWORD_HASH, hashPassword(password))
         }
-        return db.insert(TABLE_USERS, null, values)
+        return try {
+            db.insertOrThrow(TABLE_USERS, null, values)
+        } catch (e: Exception) {
+            Log.e(TAG, "registerUser failed: ${e.message}")
+            -1L
+        }
     }
 
-    fun authenticateUser(username: String, password: String): User? {
+    /**
+     * Look up a user by email address (case-insensitive).
+     */
+    fun getUserByEmail(email: String): User? {
         val db = this.readableDatabase
-        val passwordHash = hashPassword(password)
         val cursor = db.rawQuery(
-            "SELECT * FROM $TABLE_USERS WHERE $KEY_USER_NAME = ? AND $KEY_USER_PASSWORD_HASH = ?",
-            arrayOf(username.trim(), passwordHash)
+            "SELECT * FROM $TABLE_USERS WHERE LOWER($KEY_USER_EMAIL) = ?",
+            arrayOf(email.trim().lowercase())
         )
         var user: User? = null
         if (cursor.moveToFirst()) {
             user = User(
                 id = cursor.getLong(cursor.getColumnIndexOrThrow(KEY_ID)),
-                username = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_NAME)),
-                passwordHash = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_PASSWORD_HASH)),
+                fullName = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_FULL_NAME)),
                 email = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_EMAIL)),
                 phone = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_PHONE))
             )
@@ -827,18 +807,20 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         return user
     }
 
-    fun getUserByUsername(username: String): User? {
+    /**
+     * Look up a user by phone number.
+     */
+    fun getUserByPhone(phone: String): User? {
         val db = this.readableDatabase
         val cursor = db.rawQuery(
-            "SELECT * FROM $TABLE_USERS WHERE $KEY_USER_NAME = ?",
-            arrayOf(username.trim())
+            "SELECT * FROM $TABLE_USERS WHERE $KEY_USER_PHONE = ?",
+            arrayOf(phone.trim())
         )
         var user: User? = null
         if (cursor.moveToFirst()) {
             user = User(
                 id = cursor.getLong(cursor.getColumnIndexOrThrow(KEY_ID)),
-                username = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_NAME)),
-                passwordHash = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_PASSWORD_HASH)),
+                fullName = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_FULL_NAME)),
                 email = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_EMAIL)),
                 phone = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_PHONE))
             )
@@ -847,12 +829,45 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         return user
     }
 
-    fun isUserExists(username: String): Boolean {
+    /**
+     * Check if email already registered.
+     */
+    fun isEmailRegistered(email: String): Boolean {
         val db = this.readableDatabase
-        val cursor = db.rawQuery("SELECT 1 FROM $TABLE_USERS WHERE $KEY_USER_NAME = ?", arrayOf(username.trim()))
+        val cursor = db.rawQuery(
+            "SELECT 1 FROM $TABLE_USERS WHERE LOWER($KEY_USER_EMAIL) = ?",
+            arrayOf(email.trim().lowercase())
+        )
         val exists = cursor.count > 0
         cursor.close()
         return exists
+    }
+
+    /**
+     * Check if phone number already registered.
+     */
+    fun isPhoneRegistered(phone: String): Boolean {
+        val db = this.readableDatabase
+        val cursor = db.rawQuery(
+            "SELECT 1 FROM $TABLE_USERS WHERE $KEY_USER_PHONE = ?",
+            arrayOf(phone.trim())
+        )
+        val exists = cursor.count > 0
+        cursor.close()
+        return exists
+    }
+
+    /**
+     * Update user profile details.
+     */
+    fun updateUserProfile(userId: Long, fullName: String, email: String, phone: String): Int {
+        val db = this.writableDatabase
+        val values = ContentValues().apply {
+            put(KEY_USER_FULL_NAME, fullName.trim())
+            put(KEY_USER_EMAIL, email.trim().lowercase())
+            put(KEY_USER_PHONE, phone.trim())
+        }
+        return db.update(TABLE_USERS, values, "$KEY_ID = ?", arrayOf(userId.toString()))
     }
 }
 

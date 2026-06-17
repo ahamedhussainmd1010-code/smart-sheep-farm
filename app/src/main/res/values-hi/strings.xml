@@ -125,17 +125,33 @@
     <string name="bulk_deals_title">थोक चारा सौदे और विशेष</string>
     <string name="login_title">फार्म में लॉग इन करें</string>
     <string name="signup_title">नया खाता बनाएं</string>
-    <string name="username_label">उपयोगकर्ता नाम</string>
-    <string name="password_label">पासवर्ड</string>
-    <string name="email_label">ईमेल (वैकल्पिक)</string>
-    <string name="login_button">लॉग इन करें</string>
-    <string name="signup_button">रजिस्टर करें</string>
-    <string name="dont_have_account">खाता नहीं है? साइन अप करें</string>
-    <string name="already_have_account">पहले से ही खाता है? साइन इन करें</string>
+    <string name="full_name_label">पूरा नाम</string>
+    <string name="email_label">ईमेल पता</string>
+    <string name="phone_label">फ़ोन नंबर (+91 XXXXX XXXXX)</string>
+    <string name="otp_login_tab_email">ईमेल OTP</string>
+    <string name="otp_login_tab_phone">फ़ोन OTP</string>
+    <string name="send_otp_button">OTP भेजें</string>
+    <string name="otp_sent_title">OTP भेजा गया!</string>
+    <string name="otp_sent_desc">हमने 6 अंकों का OTP भेजा है</string>
+    <string name="otp_check_notification">OTP कोड के लिए अपना नोटिफिकेशन पैनल देखें</string>
+    <string name="otp_enter_label">6 अंकों का OTP दर्ज करें</string>
+    <string name="otp_expires_in">OTP की समय-सीमा समाप्त होती है</string>
+    <string name="otp_expired">OTP समाप्त हो गया</string>
+    <string name="verify_otp_button">OTP सत्यापित करें</string>
+    <string name="resend_otp_button">OTP पुनः भेजें</string>
+    <string name="otp_resend_hint">60 सेकंड बाद पुनः भेजें उपलब्ध</string>
+    <string name="dont_have_account">नए उपयोगकर्ता? खाता बनाएं</string>
+    <string name="already_have_account">पहले से खाता है? साइन इन करें</string>
+    <string name="back_to_login">&#8592; साइन इन पर वापस जाएं</string>
     <string name="logout_button">लॉग आउट करें</string>
     <string name="logged_in_as">इस रूप में लॉग इन हैं: %s</string>
-    <string name="phone_label">फ़ोन नंबर</string>
     <string name="phone_in_settings">फ़ोन: %s</string>
+    <string name="email_in_settings">ईमेल: %s</string>
+    <string name="otp_security_note">&#128272; OTP 5 मिनट में समाप्त होता है</string>
+    <string name="registration_otp_via">OTP के माध्यम से भेजें:</string>
+    <string name="otp_via_email">ईमेल</string>
+    <string name="otp_via_sms">SMS</string>
+    <string name="change_identifier">ईमेल / फ़ोन बदलें</string>
 </resources>
 
 

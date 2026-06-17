@@ -107,10 +107,18 @@ data class FinancialRecord(
 
 data class User(
     val id: Long = 0L,
-    val username: String,
-    val passwordHash: String,
+    val fullName: String,
     val email: String,
     val phone: String
 )
 
+enum class OtpType {
+    EMAIL, PHONE
+}
 
+data class OtpSession(
+    val identifier: String,   // email or phone
+    val otpCode: String,      // 6-digit code
+    val expiresAt: Long,      // System.currentTimeMillis() + 5min
+    val type: OtpType
+)

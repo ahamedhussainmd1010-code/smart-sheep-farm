@@ -28,6 +28,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.res.stringResource
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import com.example.myapplication2sheepfarm.R
 import com.example.myapplication2sheepfarm.ui.theme.*
 
@@ -172,7 +177,7 @@ fun SmartSheepFarmApp(viewModel: FarmViewModel, modifier: Modifier = Modifier) {
 
                 // Profile Logo / Avatar Button
                 currentUser?.let { user ->
-                    val initial = user.username.take(1).uppercase()
+                    val initial = user.fullName.take(1).uppercase()
                     Box(
                         modifier = Modifier
                             .size(30.dp)
@@ -200,7 +205,7 @@ fun SmartSheepFarmApp(viewModel: FarmViewModel, modifier: Modifier = Modifier) {
                     onClick = { showSettingsDialog = true },
                     modifier = Modifier.size(36.dp)
                 ) {
-                    Text("⚙️", fontSize = 20.sp)
+                    Text("âš™ï¸", fontSize = 20.sp)
                 }
             }
         }
@@ -245,11 +250,11 @@ fun SmartSheepFarmApp(viewModel: FarmViewModel, modifier: Modifier = Modifier) {
             modifier = Modifier.height(72.dp)
         ) {
             val navItems = listOf(
-                AppTab.DASHBOARD to Pair(R.string.tab_dashboard, "📊"),
-                AppTab.LIVESTOCK to Pair(R.string.tab_livestock, "🐑"),
-                AppTab.HEALTH to Pair(R.string.tab_health, "💉"),
-                AppTab.BREEDING_FEED to Pair(R.string.tab_breeding_feed, "🌾"),
-                AppTab.FINANCES to Pair(R.string.tab_finances, "💰")
+                AppTab.DASHBOARD to Pair(R.string.tab_dashboard, "ðŸ“Š"),
+                AppTab.LIVESTOCK to Pair(R.string.tab_livestock, "ðŸ‘"),
+                AppTab.HEALTH to Pair(R.string.tab_health, "ðŸ’‰"),
+                AppTab.BREEDING_FEED to Pair(R.string.tab_breeding_feed, "ðŸŒ¾"),
+                AppTab.FINANCES to Pair(R.string.tab_finances, "ðŸ’°")
             )
 
             navItems.forEach { (tab, details) ->
@@ -335,7 +340,7 @@ fun SmartSheepFarmApp(viewModel: FarmViewModel, modifier: Modifier = Modifier) {
                             ) {
                                 Text(text = label, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                 if (tempLanguage == lang) {
-                                    Text(text = "✓", color = FarmGreenLight, fontWeight = FontWeight.Bold)
+                                    Text(text = "âœ“", color = FarmGreenLight, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -394,7 +399,7 @@ fun SmartSheepFarmApp(viewModel: FarmViewModel, modifier: Modifier = Modifier) {
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            val initial = user.username.take(1).uppercase()
+                            val initial = user.fullName.take(1).uppercase()
                             Box(
                                 modifier = Modifier
                                     .size(54.dp)
@@ -416,7 +421,7 @@ fun SmartSheepFarmApp(viewModel: FarmViewModel, modifier: Modifier = Modifier) {
                             }
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = stringResource(R.string.logged_in_as, user.username),
+                                text = stringResource(R.string.logged_in_as, user.fullName),
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold
@@ -550,7 +555,7 @@ fun DashboardTab(viewModel: FarmViewModel) {
         // Prominent Alert Center (Central Feature)
         item {
             Text(
-                text = "🔔 " + stringResource(R.string.active_alerts) + " (${alerts.size})",
+                text = "ðŸ”” " + stringResource(R.string.active_alerts) + " (${alerts.size})",
                 color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold
@@ -591,9 +596,9 @@ fun DashboardTab(viewModel: FarmViewModel) {
                     AlertType.INFO -> BlueInfo
                 }
                 val prefix = when (alert.type) {
-                    AlertType.CRITICAL -> "⚠️ [CRITICAL] "
-                    AlertType.WARNING -> "🔸 [WARNING] "
-                    AlertType.INFO -> "ℹ️ [INFO] "
+                    AlertType.CRITICAL -> "âš ï¸ [CRITICAL] "
+                    AlertType.WARNING -> "ðŸ”¸ [WARNING] "
+                    AlertType.INFO -> "â„¹ï¸ [INFO] "
                 }
 
                 Card(
@@ -608,9 +613,9 @@ fun DashboardTab(viewModel: FarmViewModel) {
                     ) {
                         Text(
                             text = when (alert.type) {
-                                AlertType.CRITICAL -> "🚨"
-                                AlertType.WARNING -> "📢"
-                                AlertType.INFO -> "📅"
+                                AlertType.CRITICAL -> "ðŸš¨"
+                                AlertType.WARNING -> "ðŸ“¢"
+                                AlertType.INFO -> "ðŸ“…"
                             },
                             fontSize = 24.sp
                         )
@@ -636,7 +641,7 @@ fun DashboardTab(viewModel: FarmViewModel) {
         // Live Animal Headcounts
         item {
             Text(
-                text = "📊 " + stringResource(R.string.livestock_metrics),
+                text = "ðŸ“Š " + stringResource(R.string.livestock_metrics),
                 color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
@@ -661,7 +666,7 @@ fun DashboardTab(viewModel: FarmViewModel) {
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(text = stringResource(R.string.sheep_label) + " (🐑)", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text(text = stringResource(R.string.sheep_label) + " (ðŸ‘)", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                             Text(
                                 text = totalSheep.toString(),
                                 color = FarmGreenLight,
@@ -695,7 +700,7 @@ fun DashboardTab(viewModel: FarmViewModel) {
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(text = stringResource(R.string.goats_label) + " (🐐)", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text(text = stringResource(R.string.goats_label) + " (ðŸ)", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                             Text(
                                 text = totalGoats.toString(),
                                 color = FarmGreenLight,
@@ -736,13 +741,13 @@ fun DashboardTab(viewModel: FarmViewModel) {
                     Column {
                         Text(text = stringResource(R.string.ledger_net_balance), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 12.sp)
                         Text(
-                            text = if (netFinances >= 0) "+₹${String.format("%.2f", netFinances)}" else "-₹${String.format("%.2f", kotlin.math.abs(netFinances))}",
+                            text = if (netFinances >= 0) "+â‚¹${String.format("%.2f", netFinances)}" else "-â‚¹${String.format("%.2f", kotlin.math.abs(netFinances))}",
                             color = if (netFinances >= 0) FarmGreenLight else RedAlert,
                             fontSize = 22.sp,
                             fontWeight = FontWeight.Black
                         )
                     }
-                    Text("💰", fontSize = 28.sp)
+                    Text("ðŸ’°", fontSize = 28.sp)
                 }
             }
         }
@@ -776,7 +781,7 @@ fun DashboardTab(viewModel: FarmViewModel) {
                                 Text(sch.vaccineName, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp)
                             }
                             if (sch.dewormingRequired) {
-                                Text("+ Deworming 💊", color = FarmGreenLight, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                Text("+ Deworming ðŸ’Š", color = FarmGreenLight, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -988,8 +993,8 @@ fun LivestockTab(viewModel: FarmViewModel) {
                             ) {
                                 Text(
                                     text = when (animal.type) {
-                                        AnimalType.SHEEP -> if (animal.ageCategory == AgeCategory.ADULT) "🐑" else "🐏"
-                                        AnimalType.GOAT -> "🐐"
+                                        AnimalType.SHEEP -> if (animal.ageCategory == AgeCategory.ADULT) "ðŸ‘" else "ðŸ"
+                                        AnimalType.GOAT -> "ðŸ"
                                     },
                                     fontSize = 24.sp
                                 )
@@ -1008,7 +1013,7 @@ fun LivestockTab(viewModel: FarmViewModel) {
                                         fontSize = 15.sp
                                     )
                                     Text(
-                                        text = if (animal.gender == Gender.MALE) "♂" else "♀",
+                                        text = if (animal.gender == Gender.MALE) "â™‚" else "â™€",
                                         color = if (animal.gender == Gender.MALE) BlueInfo else RedAlert,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 13.sp
@@ -1052,7 +1057,7 @@ fun LivestockTab(viewModel: FarmViewModel) {
                             }
 
                             IconButton(onClick = { viewModel.removeAnimal(animal.id) }) {
-                                Text("❌", fontSize = 16.sp)
+                                Text("âŒ", fontSize = 16.sp)
                             }
                         }
                     }
@@ -1425,7 +1430,7 @@ fun HealthTab(viewModel: FarmViewModel) {
         // Health History Log List
         item {
             Text(
-                text = "📜 " + stringResource(R.string.routine_health_logs),
+                text = "ðŸ“œ " + stringResource(R.string.routine_health_logs),
                 color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold
@@ -1865,7 +1870,7 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
                     }
                     Box(modifier = Modifier.padding(12.dp)) {
                         Text(
-                            text = "🌾 High-Quality Alfalfa, Pellets & Minerals",
+                            text = "ðŸŒ¾ High-Quality Alfalfa, Pellets & Minerals",
                             color = MaterialTheme.colorScheme.onSurface,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold
@@ -1921,7 +1926,7 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
         // Bulk Deals Section Header
         item {
             Text(
-                text = "🏷️ " + stringResource(R.string.bulk_deals_title),
+                text = "ðŸ·ï¸ " + stringResource(R.string.bulk_deals_title),
                 color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
@@ -1931,9 +1936,9 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
 
         // Active Bulk Deals Catalog
         val deals = listOf(
-            Triple("Alfalfa Hay", Pair(500f, 150f), Triple("alfalfa_deal", "Premium Alfalfa Hay Bulk Deal", "500kg Bulk Pack • Save 25%")),
-            Triple("Concentrate Pellets", Pair(200f, 80f), Triple("pellets_deal", "Nutritional Pellets Combo Pack", "200kg Combo Pack • Save 15%")),
-            Triple("Mineral Blocks", Pair(10f, 40f), Triple("salt_blocks_deal", "Himalayan Mineral Salt Block", "10 units Pack • Save 20%"))
+            Triple("Alfalfa Hay", Pair(500f, 150f), Triple("alfalfa_deal", "Premium Alfalfa Hay Bulk Deal", "500kg Bulk Pack â€¢ Save 25%")),
+            Triple("Concentrate Pellets", Pair(200f, 80f), Triple("pellets_deal", "Nutritional Pellets Combo Pack", "200kg Combo Pack â€¢ Save 15%")),
+            Triple("Mineral Blocks", Pair(10f, 40f), Triple("salt_blocks_deal", "Himalayan Mineral Salt Block", "10 units Pack â€¢ Save 20%"))
         )
 
         items(deals) { (feedName, specs, details) ->
@@ -1967,7 +1972,7 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
                         Text(text = title, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                         Text(text = desc, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 10.sp)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text(text = "₹${String.format(java.util.Locale.US, "%.2f", price)}", color = FarmGreenLight, fontWeight = FontWeight.Black, fontSize = 13.sp)
+                        Text(text = "â‚¹${String.format(java.util.Locale.US, "%.2f", price)}", color = FarmGreenLight, fontWeight = FontWeight.Black, fontSize = 13.sp)
                     }
 
                     Button(
@@ -2354,7 +2359,7 @@ fun FinancesTab(viewModel: FarmViewModel) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text(text = stringResource(R.string.total_income_label), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 11.sp)
                         Text(
-                            "₹${String.format("%.2f", totalIncome)}",
+                            "â‚¹${String.format("%.2f", totalIncome)}",
                             color = FarmGreenLight,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold
@@ -2371,7 +2376,7 @@ fun FinancesTab(viewModel: FarmViewModel) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text(text = stringResource(R.string.total_expenses_label), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 11.sp)
                         Text(
-                            "₹${String.format("%.2f", totalExpense)}",
+                            "â‚¹${String.format("%.2f", totalExpense)}",
                             color = RedAlert,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold
@@ -2465,7 +2470,7 @@ fun FinancesTab(viewModel: FarmViewModel) {
                         Text("${trans.category.name} | ${trans.date}", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 11.sp)
                     }
                     Text(
-                        text = if (isIncome) "+₹${trans.amount}" else "-₹${trans.amount}",
+                        text = if (isIncome) "+â‚¹${trans.amount}" else "-â‚¹${trans.amount}",
                         color = if (isIncome) FarmGreenLight else RedAlert,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
@@ -2620,31 +2625,19 @@ fun LocalizedApp(viewModel: FarmViewModel, content: @Composable () -> Unit) {
     }
 }
 
+
 @Composable
 fun AuthScreen(viewModel: FarmViewModel) {
+    val authScreenState by viewModel.authScreenState.collectAsState()
+    val authError by viewModel.authError.collectAsState()
+    val authSuccess by viewModel.authSuccess.collectAsState()
     val context = androidx.compose.ui.platform.LocalContext.current
-    val loginError by viewModel.loginError.collectAsState()
-    val signupSuccess by viewModel.signupSuccess.collectAsState()
 
-    var isSignUp by remember { mutableStateOf(false) }
-    var username by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var phone by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var isPasswordVisible by remember { mutableStateOf(false) }
-
-    val currentLanguage by viewModel.currentLanguage.collectAsState()
-    val currentTheme by viewModel.currentTheme.collectAsState()
-
-    LaunchedEffect(isSignUp) {
-        viewModel.clearLoginError()
-    }
-
-    LaunchedEffect(signupSuccess) {
-        if (signupSuccess) {
-            android.widget.Toast.makeText(context, "Account created successfully! Please Sign In.", android.widget.Toast.LENGTH_LONG).show()
-            isSignUp = false
-            viewModel.resetSignupSuccess()
+    // Show success toast and clear
+    LaunchedEffect(authSuccess) {
+        if (authSuccess != null) {
+            android.widget.Toast.makeText(context, authSuccess, android.widget.Toast.LENGTH_LONG).show()
+            viewModel.clearAuthSuccess()
         }
     }
 
@@ -2654,264 +2647,590 @@ fun AuthScreen(viewModel: FarmViewModel) {
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        MaterialTheme.colorScheme.background,
-                        FarmGreen.copy(alpha = 0.15f)
+                        Color(0xFF0A1628),
+                        Color(0xFF0D2137),
+                        Color(0xFF1B4332)
                     )
                 )
-            )
-            .padding(16.dp),
+            ),
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-        ) {
-            // Language & Theme Quick Selector Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Language cycle button
-                TextButton(
-                    onClick = {
-                        val nextLang = when (currentLanguage) {
-                            AppLanguage.ENGLISH -> AppLanguage.HINDI
-                            AppLanguage.HINDI -> AppLanguage.TELUGU
-                            AppLanguage.TELUGU -> AppLanguage.ENGLISH
-                        }
-                        viewModel.setLanguage(nextLang)
-                    }
-                ) {
-                    Text(
-                        text = "🌐 " + when (currentLanguage) {
-                            AppLanguage.ENGLISH -> "English"
-                            AppLanguage.HINDI -> "हिंदी"
-                            AppLanguage.TELUGU -> "తెలుగు"
-                        },
-                        fontSize = 11.sp,
-                        color = FarmGreenLight,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                // Theme toggle button
-                IconButton(
-                    onClick = {
-                        val nextTheme = when (currentTheme) {
-                            AppTheme.SYSTEM -> AppTheme.LIGHT
-                            AppTheme.LIGHT -> AppTheme.DARK
-                            AppTheme.DARK -> AppTheme.SYSTEM
-                        }
-                        viewModel.setTheme(nextTheme)
-                    },
-                    modifier = Modifier.size(32.dp)
-                ) {
-                    Text(
-                        text = when (currentTheme) {
-                            AppTheme.SYSTEM -> "⚙️"
-                            AppTheme.LIGHT -> "☀️"
-                            AppTheme.DARK -> "🌙"
-                        },
-                        fontSize = 16.sp
-                    )
-                }
-            }
+        // Decorative background circles
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            drawCircle(color = Color(0xFF2D6A4F).copy(alpha = 0.15f), radius = 300.dp.toPx(), center = Offset(size.width * 0.85f, size.height * 0.15f))
+            drawCircle(color = Color(0xFF1B4332).copy(alpha = 0.2f), radius = 200.dp.toPx(), center = Offset(size.width * 0.1f, size.height * 0.75f))
+        }
 
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(2.dp, FarmGreen),
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 12.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    // Premium Header Image
-                    androidx.compose.foundation.Image(
-                        painter = androidx.compose.ui.res.painterResource(id = R.drawable.real_sheep),
-                        contentDescription = "Real Sheep Header",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(130.dp)
-                            .clip(RoundedCornerShape(12.dp)),
-                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                    )
-
-                    Text(
-                        text = stringResource(if (isSignUp) R.string.signup_title else R.string.login_title),
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Black,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-
-                    // Sign In vs Sign Up Tab Row
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(40.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.background)
-                            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                                .clip(RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp))
-                                .background(if (!isSignUp) FarmGreen else Color.Transparent)
-                                .clickable { isSignUp = false },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "Sign In",
-                                color = if (!isSignUp) Color.White else MaterialTheme.colorScheme.onSurface,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp
-                            )
-                        }
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                                .clip(RoundedCornerShape(topEnd = 8.dp, bottomEnd = 8.dp))
-                                .background(if (isSignUp) FarmGreen else Color.Transparent)
-                                .clickable { isSignUp = true },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "Create Account",
-                                color = if (isSignUp) Color.White else MaterialTheme.colorScheme.onSurface,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp
-                            )
-                        }
-                    }
-
-                    // Input Form Fields
-                    OutlinedTextField(
-                        value = username,
-                        onValueChange = { username = it },
-                        label = { Text(stringResource(R.string.username_label)) },
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = FarmGreen,
-                            focusedLabelColor = FarmGreenLight
-                        ),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    if (isSignUp) {
-                        OutlinedTextField(
-                            value = email,
-                            onValueChange = { email = it },
-                            label = { Text(stringResource(R.string.email_label)) },
-                            singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = FarmGreen,
-                                focusedLabelColor = FarmGreenLight
-                            ),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        OutlinedTextField(
-                            value = phone,
-                            onValueChange = { phone = it },
-                            label = { Text(stringResource(R.string.phone_label)) },
-                            singleLine = true,
-                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                                keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone
-                            ),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = FarmGreen,
-                                focusedLabelColor = FarmGreenLight
-                            ),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-
-                    OutlinedTextField(
-                        value = password,
-                        onValueChange = { password = it },
-                        label = { Text(stringResource(R.string.password_label)) },
-                        singleLine = true,
-                        visualTransformation = if (isPasswordVisible) androidx.compose.ui.text.input.VisualTransformation.None else androidx.compose.ui.text.input.PasswordVisualTransformation(),
-                        trailingIcon = {
-                            TextButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
-                                Text(
-                                    text = if (isPasswordVisible) "Hide" else "Show",
-                                    color = FarmGreenLight,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 11.sp
-                                )
-                            }
-                        },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = FarmGreen,
-                            focusedLabelColor = FarmGreenLight
-                        ),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    // Error Box if any
-                    loginError?.let { err ->
-                        Text(
-                            text = err,
-                            color = RedAlert,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Submit Action Button
-                    Button(
-                        onClick = {
-                            if (isSignUp) {
-                                viewModel.signup(username, email, phone, password)
-                            } else {
-                                viewModel.login(username, password)
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = FarmGreen),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp)
-                    ) {
-                        Text(
-                            text = stringResource(if (isSignUp) R.string.signup_button else R.string.login_button),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp,
-                            color = Color.White
-                        )
-                    }
-
-                    // Bottom helper link
-                    Text(
-                        text = stringResource(if (isSignUp) R.string.already_have_account else R.string.dont_have_account),
-                        color = FarmGreenLight,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier
-                            .clickable { isSignUp = !isSignUp }
-                            .padding(vertical = 4.dp)
-                    )
-                }
+        AnimatedContent(
+            targetState = authScreenState,
+            transitionSpec = {
+                slideInHorizontally { it } + fadeIn() togetherWith slideOutHorizontally { -it } + fadeOut()
+            },
+            label = "auth_screen_anim"
+        ) { screen ->
+            when (screen) {
+                AuthScreenState.LOGIN -> LoginScreen(viewModel, authError)
+                AuthScreenState.OTP_VERIFY -> OtpVerifyScreen(viewModel, authError)
+                AuthScreenState.REGISTER -> RegisterScreen(viewModel, authError)
             }
         }
     }
 }
 
+@Composable
+fun LoginScreen(viewModel: FarmViewModel, authError: String?) {
+    var selectedType by remember { mutableStateOf(OtpType.EMAIL) }
+    var identifier by remember { mutableStateOf("") }
 
+    LaunchedEffect(selectedType) {
+        identifier = ""
+        viewModel.clearAuthError()
+    }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 28.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item { Spacer(modifier = Modifier.height(48.dp)) }
+
+        // App Logo & Title
+        item {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(CircleShape)
+                        .background(Brush.radialGradient(listOf(Color(0xFF52B788), Color(0xFF2D6A4F)))),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("ðŸ‘", fontSize = 38.sp)
+                }
+                Text(
+                    text = "Smart Sheep Farm",
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = "Secure Login with OTP",
+                    color = Color(0xFF95D5B2),
+                    fontSize = 13.sp,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+
+        // Card
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.07f)),
+                border = BorderStroke(1.dp, Color(0xFF52B788).copy(alpha = 0.4f)),
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = "Sign In",
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    // OTP type toggle
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color.White.copy(alpha = 0.08f)),
+                    ) {
+                        listOf(OtpType.EMAIL to "ðŸ“§ Email OTP", OtpType.PHONE to "ðŸ“± Phone OTP").forEach { (type, label) ->
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(if (selectedType == type) Color(0xFF2D6A4F) else Color.Transparent)
+                                    .clickable { selectedType = type }
+                                    .padding(vertical = 10.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(label, color = Color.White, fontSize = 12.sp, fontWeight = if (selectedType == type) FontWeight.Bold else FontWeight.Normal)
+                            }
+                        }
+                    }
+
+                    // Identifier Input
+                    OutlinedTextField(
+                        value = identifier,
+                        onValueChange = { identifier = it; viewModel.clearAuthError() },
+                        label = {
+                            Text(
+                                if (selectedType == OtpType.EMAIL) "Email Address" else "Phone Number (+91...)",
+                                color = Color(0xFF95D5B2)
+                            )
+                        },
+                        leadingIcon = { Text(if (selectedType == OtpType.EMAIL) "ðŸ“§" else "ðŸ“±", fontSize = 18.sp) },
+                        singleLine = true,
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                            keyboardType = if (selectedType == OtpType.EMAIL) androidx.compose.ui.text.input.KeyboardType.Email else androidx.compose.ui.text.input.KeyboardType.Phone
+                        ),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF52B788),
+                            unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
+                            focusedLabelColor = Color(0xFF95D5B2),
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            cursorColor = Color(0xFF52B788)
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    // Error
+                    if (authError != null) {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFE63946).copy(alpha = 0.15f)),
+                            border = BorderStroke(1.dp, Color(0xFFE63946).copy(alpha = 0.5f)),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(
+                                text = "âš ï¸ $authError",
+                                color = Color(0xFFFF8FA3),
+                                fontSize = 12.sp,
+                                modifier = Modifier.padding(10.dp)
+                            )
+                        }
+                    }
+
+                    // Send OTP Button
+                    Button(
+                        onClick = { viewModel.sendLoginOtp(identifier, selectedType) },
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2D6A4F)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("ðŸ” Send OTP", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    }
+
+                    // Security note
+                    Text(
+                        text = "ðŸ”’ OTP expires in 5 minutes for your security",
+                        color = Color(0xFF95D5B2),
+                        fontSize = 11.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        }
+
+        // Create Account link
+        item {
+            Text(
+                text = "New here? Create Account â†’",
+                color = Color(0xFF52B788),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .clickable { viewModel.showRegisterScreen() }
+                    .padding(8.dp)
+            )
+        }
+
+        item { Spacer(modifier = Modifier.height(32.dp)) }
+    }
+}
+
+@Composable
+fun OtpVerifyScreen(viewModel: FarmViewModel, authError: String?) {
+    val otpIdentifier by viewModel.otpIdentifier.collectAsState()
+    val otpType by viewModel.otpType.collectAsState()
+    val countdown by viewModel.otpCountdown.collectAsState()
+    val resendEnabled by viewModel.resendEnabled.collectAsState()
+    val isRegistrationFlow by viewModel.isRegistrationFlow.collectAsState()
+
+    val otpDigits = remember { mutableStateListOf("", "", "", "", "", "") }
+    var focusedIndex by remember { mutableIntStateOf(0) }
+    val focusRequesters = remember { List(6) { androidx.compose.ui.focus.FocusRequester() } }
+
+    // Format countdown as MM:SS
+    val minutes = countdown / 60
+    val seconds = countdown % 60
+    val countdownStr = String.format("%d:%02d", minutes, seconds)
+    val isExpired = countdown == 0
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 28.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item { Spacer(modifier = Modifier.height(48.dp)) }
+
+        // Header
+        item {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(
+                    modifier = Modifier
+                        .size(72.dp)
+                        .clip(CircleShape)
+                        .background(Brush.radialGradient(listOf(Color(0xFF52B788), Color(0xFF2D6A4F)))),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("ðŸ”", fontSize = 34.sp)
+                }
+                Text("OTP Sent!", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    text = "We sent a 6-digit OTP to",
+                    color = Color(0xFF95D5B2), fontSize = 13.sp
+                )
+                Text(
+                    text = "${if (otpType == OtpType.EMAIL) "ðŸ“§" else "ðŸ“±"} $otpIdentifier",
+                    color = Color(0xFF52B788), fontSize = 14.sp, fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Check your notification panel for the code",
+                    color = Color(0xFF95D5B2).copy(alpha = 0.8f), fontSize = 11.sp, textAlign = TextAlign.Center
+                )
+            }
+        }
+
+        // OTP Card
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.07f)),
+                border = BorderStroke(1.dp, Color(0xFF52B788).copy(alpha = 0.4f)),
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("Enter 6-digit OTP", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+
+                    // 6-box OTP input
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        otpDigits.forEachIndexed { index, digit ->
+                            OutlinedTextField(
+                                value = digit,
+                                onValueChange = { newValue ->
+                                    val filtered = newValue.filter { it.isDigit() }
+                                    if (filtered.length <= 1) {
+                                        otpDigits[index] = filtered
+                                        if (filtered.isNotEmpty() && index < 5) {
+                                            focusedIndex = index + 1
+                                            focusRequesters[index + 1].requestFocus()
+                                        }
+                                    } else if (filtered.length > 1) {
+                                        // Handle paste: fill digits
+                                        filtered.take(6 - index).forEachIndexed { i, ch ->
+                                            if (index + i < 6) otpDigits[index + i] = ch.toString()
+                                        }
+                                        val nextIdx = (index + filtered.length).coerceAtMost(5)
+                                        focusedIndex = nextIdx
+                                        focusRequesters[nextIdx].requestFocus()
+                                    }
+                                },
+                                singleLine = true,
+                                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                                    keyboardType = androidx.compose.ui.text.input.KeyboardType.NumberPassword
+                                ),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = Color(0xFF52B788),
+                                    unfocusedBorderColor = if (digit.isNotEmpty()) Color(0xFF52B788).copy(alpha = 0.6f) else Color.White.copy(alpha = 0.3f),
+                                    focusedTextColor = Color.White,
+                                    unfocusedTextColor = Color.White,
+                                    cursorColor = Color(0xFF52B788)
+                                ),
+                                textStyle = androidx.compose.ui.text.TextStyle(
+                                    textAlign = TextAlign.Center,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                ),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .aspectRatio(0.85f)
+                                    .focusRequester(focusRequesters[index]),
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                        }
+                    }
+
+                    // Countdown
+                    Row(
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        if (isExpired) {
+                            Text("â° OTP Expired", color = Color(0xFFFF6B6B), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        } else {
+                            Text("OTP expires in ", color = Color(0xFF95D5B2), fontSize = 12.sp)
+                            Text(
+                                text = countdownStr,
+                                color = if (countdown < 60) Color(0xFFFF8FA3) else Color(0xFF52B788),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    // Error
+                    if (authError != null) {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFE63946).copy(alpha = 0.15f)),
+                            border = BorderStroke(1.dp, Color(0xFFE63946).copy(alpha = 0.5f)),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("âš ï¸ $authError", color = Color(0xFFFF8FA3), fontSize = 12.sp, modifier = Modifier.padding(10.dp))
+                        }
+                    }
+
+                    // Verify Button
+                    Button(
+                        onClick = {
+                            val code = otpDigits.joinToString("")
+                            viewModel.verifyOtp(code)
+                        },
+                        enabled = otpDigits.all { it.isNotEmpty() } && !isExpired,
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF2D6A4F),
+                            disabledContainerColor = Color(0xFF2D6A4F).copy(alpha = 0.4f)
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("âœ… Verify OTP", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    }
+
+                    // Resend OTP
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        if (resendEnabled) {
+                            Text(
+                                text = "ðŸ”„ Resend OTP",
+                                color = Color(0xFF52B788),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier
+                                    .clickable {
+                                        otpDigits.forEachIndexed { i, _ -> otpDigits[i] = "" }
+                                        focusedIndex = 0
+                                        viewModel.resendOtp()
+                                    }
+                                    .padding(vertical = 4.dp)
+                            )
+                        } else {
+                            Text(
+                                text = "Resend available after 60 seconds",
+                                color = Color(0xFF95D5B2).copy(alpha = 0.6f),
+                                fontSize = 11.sp
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Back / Change link
+        item {
+            Text(
+                text = "â† Change ${if (otpType == OtpType.EMAIL) "Email" else "Phone"}",
+                color = Color(0xFF52B788),
+                fontSize = 13.sp,
+                modifier = Modifier
+                    .clickable { viewModel.showLoginScreen() }
+                    .padding(8.dp)
+            )
+        }
+
+        item { Spacer(modifier = Modifier.height(32.dp)) }
+    }
+}
+
+@Composable
+fun RegisterScreen(viewModel: FarmViewModel, authError: String?) {
+    var fullName by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var phone by remember { mutableStateOf("") }
+    var otpVia by remember { mutableStateOf(OtpType.EMAIL) }
+
+    LaunchedEffect(Unit) { viewModel.clearAuthError() }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 28.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        item { Spacer(modifier = Modifier.height(48.dp)) }
+
+        // Header
+        item {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(
+                    modifier = Modifier
+                        .size(72.dp)
+                        .clip(CircleShape)
+                        .background(Brush.radialGradient(listOf(Color(0xFF52B788), Color(0xFF2D6A4F)))),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("ðŸ‘¤", fontSize = 34.sp)
+                }
+                Text("Create Account", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                Text("Register to access Smart Sheep Farm", color = Color(0xFF95D5B2), fontSize = 13.sp)
+            }
+        }
+
+        // Form card
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.07f)),
+                border = BorderStroke(1.dp, Color(0xFF52B788).copy(alpha = 0.4f)),
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Text("Account Details", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+
+                    // Full Name
+                    OutlinedTextField(
+                        value = fullName,
+                        onValueChange = { fullName = it; viewModel.clearAuthError() },
+                        label = { Text("Full Name", color = Color(0xFF95D5B2)) },
+                        leadingIcon = { Text("ðŸ‘¤", fontSize = 18.sp) },
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF52B788),
+                            unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
+                            focusedTextColor = Color.White, unfocusedTextColor = Color.White,
+                            cursorColor = Color(0xFF52B788)
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    // Email
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = { email = it; viewModel.clearAuthError() },
+                        label = { Text("Email Address", color = Color(0xFF95D5B2)) },
+                        leadingIcon = { Text("ðŸ“§", fontSize = 18.sp) },
+                        singleLine = true,
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Email),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF52B788),
+                            unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
+                            focusedTextColor = Color.White, unfocusedTextColor = Color.White,
+                            cursorColor = Color(0xFF52B788)
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    // Phone
+                    OutlinedTextField(
+                        value = phone,
+                        onValueChange = { phone = it; viewModel.clearAuthError() },
+                        label = { Text("Phone Number (+91 XXXXX XXXXX)", color = Color(0xFF95D5B2)) },
+                        leadingIcon = { Text("ðŸ“±", fontSize = 18.sp) },
+                        singleLine = true,
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF52B788),
+                            unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
+                            focusedTextColor = Color.White, unfocusedTextColor = Color.White,
+                            cursorColor = Color(0xFF52B788)
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    // OTP delivery method
+                    Text("Send OTP via:", color = Color(0xFF95D5B2), fontSize = 13.sp)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color.White.copy(alpha = 0.08f))
+                    ) {
+                        listOf(OtpType.EMAIL to "ðŸ“§ Email", OtpType.PHONE to "ðŸ“± SMS").forEach { (type, label) ->
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(if (otpVia == type) Color(0xFF2D6A4F) else Color.Transparent)
+                                    .clickable { otpVia = type }
+                                    .padding(vertical = 10.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(label, color = Color.White, fontSize = 12.sp, fontWeight = if (otpVia == type) FontWeight.Bold else FontWeight.Normal)
+                            }
+                        }
+                    }
+
+                    // Error
+                    if (authError != null) {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFE63946).copy(alpha = 0.15f)),
+                            border = BorderStroke(1.dp, Color(0xFFE63946).copy(alpha = 0.5f)),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("âš ï¸ $authError", color = Color(0xFFFF8FA3), fontSize = 12.sp, modifier = Modifier.padding(10.dp))
+                        }
+                    }
+
+                    // Send OTP Button
+                    Button(
+                        onClick = { viewModel.sendRegistrationOtp(fullName, email, phone, otpVia) },
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2D6A4F)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("ðŸ” Send OTP & Register", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
+
+                    Text(
+                        text = "ðŸ”’ OTP expires in 5 minutes for your security",
+                        color = Color(0xFF95D5B2),
+                        fontSize = 11.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        }
+
+        // Back to login
+        item {
+            Text(
+                text = "â† Already have an account? Sign In",
+                color = Color(0xFF52B788),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .clickable { viewModel.showLoginScreen() }
+                    .padding(8.dp)
+            )
+        }
+
+        item { Spacer(modifier = Modifier.height(32.dp)) }
+    }
+}

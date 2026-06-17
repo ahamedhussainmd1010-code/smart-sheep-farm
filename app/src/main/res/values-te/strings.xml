@@ -123,19 +123,33 @@
     <string name="description_label">వివరణ</string>
     <string name="log_ledger_label">ఖాతా నమోదు</string>
     <string name="bulk_deals_title">బల్క్ మేత డీల్స్ &amp; స్పెషల్స్</string>
-    <string name="login_title">ఫామ్‌లోకి లాగిన్ అవ్వండి</string>
+    <string name="login_title">ఫామ‌లోకి లాగిన్ అవ్వండి</string>
     <string name="signup_title">కొత్త ఖాతాను సృష్టించండి</string>
-    <string name="username_label">యూజర్‌నేమ్</string>
-    <string name="password_label">పాస్‌వర్డ్</string>
-    <string name="email_label">ఈమెయిల్ (ఐచ్ఛికం)</string>
-    <string name="login_button">లాగిన్</string>
-    <string name="signup_button">రిజిస్టర్</string>
-    <string name="dont_have_account">ఖాతా లేదా? సైన్ అప్ చేయండి</string>
+    <string name="full_name_label">పూర్తి పేరు</string>
+    <string name="email_label">ఇమెయిల్ చిరునామా</string>
+    <string name="phone_label">ఫోన్ నంబర్ (+91 XXXXX XXXXX)</string>
+    <string name="otp_login_tab_email">ఇమెయిల్ OTP</string>
+    <string name="otp_login_tab_phone">ఫోన్ OTP</string>
+    <string name="send_otp_button">OTP పంపండి</string>
+    <string name="otp_sent_title">OTP పంపబడింది!</string>
+    <string name="otp_sent_desc">మేము 6 అంకెల OTP పంపాము</string>
+    <string name="otp_check_notification">OTP కోడ్ కోసం మీ నోటిఫికేషన్ ప్యానెల్ చూడండి</string>
+    <string name="otp_enter_label">6 అంకెల OTP నమోదు చేయండి</string>
+    <string name="otp_expires_in">OTP గడువు వేళం</string>
+    <string name="otp_expired">OTP గడువు మీరింది</string>
+    <string name="verify_otp_button">OTP ధృవీకరించండి</string>
+    <string name="resend_otp_button">OTP మళ్ళీ పంపండి</string>
+    <string name="otp_resend_hint">60 సెకన్ల తర్వాత మళ్ళీ పంపించవచ్చు</string>
+    <string name="dont_have_account">కొత్త వాడికా? ఖాతా తెరవండి</string>
     <string name="already_have_account">ఇప్పటికే ఖాతా ఉందా? సైన్ ఇన్ చేయండి</string>
+    <string name="back_to_login">&#8592; సైన్ ఇన్కు వెనుకి</string>
     <string name="logout_button">లాగ్ అవుట్</string>
-    <string name="logged_in_as">లాగిన్ అయిన యూజర్: %s</string>
-    <string name="phone_label">ఫోన్ నంబర్</string>
+    <string name="logged_in_as">లాగిన్ అయిన వాడు: %s</string>
     <string name="phone_in_settings">ఫోన్: %s</string>
+    <string name="email_in_settings">ఇమెయిల్: %s</string>
+    <string name="otp_security_note">&#128272; OTP 5 నిమిషాలల్లో గడువు మీరుతుంది</string>
+    <string name="registration_otp_via">OTP పంపు మార్గం:</string>
+    <string name="otp_via_email">ఇమెయిల్</string>
+    <string name="otp_via_sms">SMS</string>
+    <string name="change_identifier">ఇమెయిల్ / ఫోన్ మార్చండి</string>
 </resources>
-
-

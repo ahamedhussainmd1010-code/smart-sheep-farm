@@ -123,17 +123,35 @@
     <string name="description_label">Description</string>
     <string name="log_ledger_label">Log Ledger</string>
     <string name="bulk_deals_title">Bulk Feed Deals &amp; Specials</string>
+
+    <!-- Auth / OTP Strings -->
     <string name="login_title">Sign In to Farm</string>
     <string name="signup_title">Create Account</string>
-    <string name="username_label">Username</string>
-    <string name="password_label">Password</string>
-    <string name="email_label">Email (Optional)</string>
-    <string name="login_button">Login</string>
-    <string name="signup_button">Register</string>
-    <string name="dont_have_account">Don\'t have an account? Sign Up</string>
+    <string name="full_name_label">Full Name</string>
+    <string name="email_label">Email Address</string>
+    <string name="phone_label">Phone Number (+91 XXXXX XXXXX)</string>
+    <string name="otp_login_tab_email">Email OTP</string>
+    <string name="otp_login_tab_phone">Phone OTP</string>
+    <string name="send_otp_button">Send OTP</string>
+    <string name="otp_sent_title">OTP Sent!</string>
+    <string name="otp_sent_desc">We have sent a 6-digit OTP to</string>
+    <string name="otp_check_notification">Check your notification panel for the OTP code</string>
+    <string name="otp_enter_label">Enter 6-digit OTP</string>
+    <string name="otp_expires_in">OTP expires in</string>
+    <string name="otp_expired">OTP Expired</string>
+    <string name="verify_otp_button">Verify OTP</string>
+    <string name="resend_otp_button">Resend OTP</string>
+    <string name="otp_resend_hint">Resend available after 60 seconds</string>
+    <string name="dont_have_account">New here? Create Account</string>
     <string name="already_have_account">Already have an account? Sign In</string>
+    <string name="back_to_login">&#8592; Back to Sign In</string>
     <string name="logout_button">Log Out</string>
     <string name="logged_in_as">Logged in as: %s</string>
-    <string name="phone_label">Phone Number</string>
     <string name="phone_in_settings">Phone: %s</string>
+    <string name="email_in_settings">Email: %s</string>
+    <string name="otp_security_note">&#128272; OTP expires in 5 minutes for your security</string>
+    <string name="registration_otp_via">Send OTP via:</string>
+    <string name="otp_via_email">Email</string>
+    <string name="otp_via_sms">SMS</string>
+    <string name="change_identifier">Change Email / Phone</string>
 </resources>

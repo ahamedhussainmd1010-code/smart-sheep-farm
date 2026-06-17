@@ -4,6 +4,8 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,6 +34,13 @@ data class FarmAlert(
     val type: AlertType,
     val dateStr: String
 )
+
+// Auth screen states
+enum class AuthScreenState {
+    LOGIN,        // Enter email or phone to request OTP
+    OTP_VERIFY,   // Enter OTP code
+    REGISTER      // Create new account (full name + email + phone)
+}
 
 class FarmViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -66,7 +75,7 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
     private val _alerts = MutableStateFlow<List<FarmAlert>>(emptyList())
     val alerts: StateFlow<List<FarmAlert>> = _alerts.asStateFlow()
 
-    // Current Virtual / System Date for demonstration purposes (allows testing schedule changes)
+    // Current Virtual / System Date for demonstration purposes
     private val _currentDate = MutableStateFlow("2026-06-16")
     val currentDate: StateFlow<String> = _currentDate.asStateFlow()
 
@@ -76,15 +85,56 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
     private val _currentTheme = MutableStateFlow(AppTheme.SYSTEM)
     val currentTheme: StateFlow<AppTheme> = _currentTheme.asStateFlow()
 
-    // Authentication States
+    // ==========================================
+    // AUTHENTICATION STATE (OTP-based)
+    // ==========================================
+
     private val _currentUser = MutableStateFlow<User?>(null)
     val currentUser: StateFlow<User?> = _currentUser.asStateFlow()
 
-    private val _loginError = MutableStateFlow<String?>(null)
-    val loginError: StateFlow<String?> = _loginError.asStateFlow()
+    // Which auth screen to show
+    private val _authScreenState = MutableStateFlow(AuthScreenState.LOGIN)
+    val authScreenState: StateFlow<AuthScreenState> = _authScreenState.asStateFlow()
 
-    private val _signupSuccess = MutableStateFlow<Boolean>(false)
-    val signupSuccess: StateFlow<Boolean> = _signupSuccess.asStateFlow()
+    // OTP session — stored in-memory only (not persisted)
+    private var _activeOtpSession: OtpSession? = null
+
+    // Whether an OTP has been sent and we are waiting for user entry
+    private val _otpSent = MutableStateFlow(false)
+    val otpSent: StateFlow<Boolean> = _otpSent.asStateFlow()
+
+    // The identifier (email or phone) that the OTP was sent to
+    private val _otpIdentifier = MutableStateFlow("")
+    val otpIdentifier: StateFlow<String> = _otpIdentifier.asStateFlow()
+
+    // OTP type (EMAIL or PHONE)
+    private val _otpType = MutableStateFlow(OtpType.EMAIL)
+    val otpType: StateFlow<OtpType> = _otpType.asStateFlow()
+
+    // Countdown in seconds (300 = 5 min)
+    private val _otpCountdown = MutableStateFlow(0)
+    val otpCountdown: StateFlow<Int> = _otpCountdown.asStateFlow()
+
+    // Whether resend button is enabled (after 60s or expiry)
+    private val _resendEnabled = MutableStateFlow(false)
+    val resendEnabled: StateFlow<Boolean> = _resendEnabled.asStateFlow()
+
+    // Error message for auth flows
+    private val _authError = MutableStateFlow<String?>(null)
+    val authError: StateFlow<String?> = _authError.asStateFlow()
+
+    // Success message
+    private val _authSuccess = MutableStateFlow<String?>(null)
+    val authSuccess: StateFlow<String?> = _authSuccess.asStateFlow()
+
+    // Pending registration info (held during OTP verify for new user)
+    private var _pendingRegistration: Triple<String, String, String>? = null // fullName, email, phone
+
+    // Whether we are in the middle of a registration OTP flow (vs login OTP flow)
+    private val _isRegistrationFlow = MutableStateFlow(false)
+    val isRegistrationFlow: StateFlow<Boolean> = _isRegistrationFlow.asStateFlow()
+
+    private var countdownJob: Job? = null
 
     // Connection Sync State simulation
     private val _isOnline = MutableStateFlow(true)
@@ -94,7 +144,6 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
     val syncMessage: StateFlow<String> = _syncMessage.asStateFlow()
 
     // List of annual schedules
-
     val annualSchedules = listOf(
         VaccinationSchedule("02-05", "FMD Vaccination", "Foot and Mouth Disease", true),
         VaccinationSchedule("03-05", "Sheep & Goat Pox Vaccination", "Capripoxvirus (Pox)", false),
@@ -118,98 +167,315 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
     private fun loadUserSession() {
         val context = getApplication<Application>().applicationContext
         val prefs = context.getSharedPreferences("farm_prefs", android.content.Context.MODE_PRIVATE)
-        val username = prefs.getString("logged_in_user", null)
-        if (username != null) {
+        val email = prefs.getString("logged_in_user_email", null)
+        if (email != null) {
             viewModelScope.launch {
-                val user = dbHelper.getUserByUsername(username)
+                val user = dbHelper.getUserByEmail(email)
                 if (user != null) {
                     _currentUser.value = user
                 } else {
-                    prefs.edit().remove("logged_in_user").apply()
+                    prefs.edit().remove("logged_in_user_email").apply()
                 }
             }
         }
     }
 
-    fun login(username: String, password: String) {
+    // ==========================================
+    // AUTH SCREEN NAVIGATION
+    // ==========================================
+
+    fun showLoginScreen() {
+        _authScreenState.value = AuthScreenState.LOGIN
+        _authError.value = null
+        _authSuccess.value = null
+        _otpSent.value = false
+        cancelCountdown()
+    }
+
+    fun showRegisterScreen() {
+        _authScreenState.value = AuthScreenState.REGISTER
+        _authError.value = null
+        _authSuccess.value = null
+        _otpSent.value = false
+        cancelCountdown()
+    }
+
+    // ==========================================
+    // OTP: SEND (LOGIN)
+    // ==========================================
+
+    /**
+     * Called when the user presses "Send OTP" on the login screen.
+     * Looks up the user by email or phone, then sends OTP if account found.
+     */
+    fun sendLoginOtp(identifier: String, type: OtpType) {
         viewModelScope.launch {
-            _loginError.value = null
-            if (username.isBlank() || password.isBlank()) {
-                _loginError.value = "Username and password cannot be empty"
+            _authError.value = null
+            val trimmed = identifier.trim()
+            if (trimmed.isBlank()) {
+                _authError.value = if (type == OtpType.EMAIL) "Please enter your email address" else "Please enter your phone number"
                 return@launch
             }
-            val user = dbHelper.authenticateUser(username, password)
-            if (user != null) {
-                _currentUser.value = user
-                val context = getApplication<Application>().applicationContext
-                val prefs = context.getSharedPreferences("farm_prefs", android.content.Context.MODE_PRIVATE)
-                prefs.edit().putString("logged_in_user", user.username).apply()
+            if (type == OtpType.EMAIL && !isValidEmail(trimmed)) {
+                _authError.value = "Please enter a valid email address"
+                return@launch
+            }
 
-                // Trigger login notification mentioning user and email
-                val emailDisplay = if (user.email.isNotBlank()) user.email else "default admin email"
-                AlarmReceiver.postSystemNotification(
-                    context,
-                    "login_alert_${System.currentTimeMillis()}",
-                    "Successful Login Alert",
-                    "New login session established for ${user.username} ($emailDisplay)."
-                )
+            val user = if (type == OtpType.EMAIL) dbHelper.getUserByEmail(trimmed) else dbHelper.getUserByPhone(trimmed)
+            if (user == null) {
+                _authError.value = "No account found with this ${if (type == OtpType.EMAIL) "email" else "phone number"}. Please create an account."
+                return@launch
+            }
+
+            _isRegistrationFlow.value = false
+            generateAndSendOtp(trimmed, type)
+        }
+    }
+
+    // ==========================================
+    // OTP: SEND (REGISTRATION)
+    // ==========================================
+
+    /**
+     * Called when user fills in registration form and taps "Send OTP".
+     * Validates form, checks for duplicates, sends OTP.
+     */
+    fun sendRegistrationOtp(fullName: String, email: String, phone: String, otpViaType: OtpType) {
+        viewModelScope.launch {
+            _authError.value = null
+            val name = fullName.trim()
+            val mail = email.trim()
+            val ph = phone.trim()
+
+            if (name.isBlank()) { _authError.value = "Full name is required"; return@launch }
+            if (mail.isBlank()) { _authError.value = "Email address is required"; return@launch }
+            if (!isValidEmail(mail)) { _authError.value = "Please enter a valid email address"; return@launch }
+            if (ph.isBlank()) { _authError.value = "Phone number is required"; return@launch }
+            if (ph.length < 10) { _authError.value = "Please enter a valid phone number (min 10 digits)"; return@launch }
+
+            if (dbHelper.isEmailRegistered(mail)) { _authError.value = "This email is already registered. Please sign in."; return@launch }
+            if (dbHelper.isPhoneRegistered(ph)) { _authError.value = "This phone number is already registered. Please sign in."; return@launch }
+
+            _pendingRegistration = Triple(name, mail, ph)
+            _isRegistrationFlow.value = true
+
+            val identifier = if (otpViaType == OtpType.EMAIL) mail else ph
+            generateAndSendOtp(identifier, otpViaType)
+        }
+    }
+
+    // ==========================================
+    // OTP: GENERATE & NOTIFY
+    // ==========================================
+
+    private fun generateAndSendOtp(identifier: String, type: OtpType) {
+        val otp = (100000..999999).random().toString()
+        val expiresAt = System.currentTimeMillis() + (5 * 60 * 1000L) // 5 minutes
+
+        _activeOtpSession = OtpSession(
+            identifier = identifier,
+            otpCode = otp,
+            expiresAt = expiresAt,
+            type = type
+        )
+
+        _otpIdentifier.value = identifier
+        _otpType.value = type
+        _otpSent.value = true
+        _resendEnabled.value = false
+        _authError.value = null
+        _authScreenState.value = AuthScreenState.OTP_VERIFY
+
+        // Post OTP as notification (simulates email/SMS delivery)
+        val medium = if (type == OtpType.EMAIL) "Email" else "SMS"
+        val maskedId = maskIdentifier(identifier, type)
+        postSystemNotification(
+            id = "otp_${System.currentTimeMillis()}",
+            title = "🔐 Your Smart Sheep Farm OTP",
+            message = "Your OTP for login is: $otp\n\nSent to: $maskedId ($medium)\nThis OTP expires in 5 minutes.\n\n(In a real app this would be sent via email/SMS)"
+        )
+
+        // Start countdown
+        startCountdown()
+    }
+
+    // ==========================================
+    // OTP: VERIFY
+    // ==========================================
+
+    /**
+     * Verifies the OTP entered by the user.
+     */
+    fun verifyOtp(enteredCode: String) {
+        viewModelScope.launch {
+            _authError.value = null
+            val session = _activeOtpSession
+            if (session == null) {
+                _authError.value = "No OTP session active. Please request a new OTP."
+                return@launch
+            }
+            if (System.currentTimeMillis() > session.expiresAt) {
+                _authError.value = "OTP has expired. Please request a new OTP."
+                _activeOtpSession = null
+                _resendEnabled.value = true
+                return@launch
+            }
+            if (enteredCode.trim() != session.otpCode) {
+                _authError.value = "Incorrect OTP. Please try again."
+                return@launch
+            }
+
+            // OTP is correct!
+            cancelCountdown()
+            _activeOtpSession = null
+
+            if (_isRegistrationFlow.value) {
+                // Complete registration
+                val pending = _pendingRegistration
+                if (pending != null) {
+                    val (fullName, email, phone) = pending
+                    val result = dbHelper.registerUser(fullName, email, phone)
+                    if (result != -1L) {
+                        val newUser = dbHelper.getUserByEmail(email)
+                        if (newUser != null) {
+                            loginUser(newUser)
+                            _authSuccess.value = "Account created successfully! Welcome, ${newUser.fullName}."
+                        }
+                        _pendingRegistration = null
+                    } else {
+                        _authError.value = "Failed to create account. Please try again."
+                    }
+                }
             } else {
-                _loginError.value = "Invalid username or password"
+                // Complete login — find user from identifier
+                val user = if (session.type == OtpType.EMAIL) {
+                    dbHelper.getUserByEmail(session.identifier)
+                } else {
+                    dbHelper.getUserByPhone(session.identifier)
+                }
+                if (user != null) {
+                    loginUser(user)
+                    _authSuccess.value = "Welcome back, ${user.fullName}!"
+                } else {
+                    _authError.value = "Could not find account. Please try again."
+                }
             }
         }
     }
 
-    fun signup(username: String, email: String, phone: String, password: String) {
-        viewModelScope.launch {
-            _loginError.value = null
-            _signupSuccess.value = false
-            if (username.isBlank() || password.isBlank()) {
-                _loginError.value = "Username and password cannot be empty"
-                return@launch
-            }
-            if (password.length < 6) {
-                _loginError.value = "Password must be at least 6 characters"
-                return@launch
-            }
-            if (dbHelper.isUserExists(username)) {
-                _loginError.value = "Username already exists"
-                return@launch
-            }
-            val result = dbHelper.registerUser(username, email, phone, password)
-            if (result != -1L) {
-                _signupSuccess.value = true
-                // Trigger welcome email dispatch notification
-                val context = getApplication<Application>().applicationContext
-                val targetEmail = if (email.isNotBlank()) email else "your registered email"
-                AlarmReceiver.postSystemNotification(
-                    context,
-                    "signup_verify_${System.currentTimeMillis()}",
-                    "Welcome Email Dispatched!",
-                    "A confirmation notification email has been dispatched to $targetEmail."
-                )
-            } else {
-                _loginError.value = "Failed to create account. Please try again."
+    private fun loginUser(user: User) {
+        _currentUser.value = user
+        val context = getApplication<Application>().applicationContext
+        val prefs = context.getSharedPreferences("farm_prefs", android.content.Context.MODE_PRIVATE)
+        prefs.edit().putString("logged_in_user_email", user.email).apply()
+
+        postSystemNotification(
+            id = "login_${System.currentTimeMillis()}",
+            title = "✅ Login Successful",
+            message = "Welcome back, ${user.fullName}! You have logged in to Smart Sheep Farm."
+        )
+    }
+
+    // ==========================================
+    // OTP: RESEND
+    // ==========================================
+
+    fun resendOtp() {
+        val session = _activeOtpSession
+        if (session != null) {
+            generateAndSendOtp(session.identifier, session.type)
+        } else {
+            val identifier = _otpIdentifier.value
+            val type = _otpType.value
+            if (identifier.isNotBlank()) {
+                generateAndSendOtp(identifier, type)
             }
         }
     }
+
+    // ==========================================
+    // COUNTDOWN TIMER
+    // ==========================================
+
+    private fun startCountdown() {
+        cancelCountdown()
+        _otpCountdown.value = 300 // 5 minutes in seconds
+        countdownJob = viewModelScope.launch {
+            var seconds = 300
+            while (seconds > 0) {
+                delay(1000L)
+                seconds--
+                _otpCountdown.value = seconds
+                // Enable resend button after 60 seconds
+                if (seconds == 240) {
+                    _resendEnabled.value = true
+                }
+            }
+            // Timer expired
+            _resendEnabled.value = true
+            _authError.value = "OTP has expired. Please tap Resend OTP."
+        }
+    }
+
+    private fun cancelCountdown() {
+        countdownJob?.cancel()
+        countdownJob = null
+    }
+
+    // ==========================================
+    // LOGOUT
+    // ==========================================
 
     fun logout() {
         _currentUser.value = null
-        _loginError.value = null
-        _signupSuccess.value = false
+        _authError.value = null
+        _authSuccess.value = null
+        _otpSent.value = false
+        _activeOtpSession = null
+        _pendingRegistration = null
+        _isRegistrationFlow.value = false
+        _authScreenState.value = AuthScreenState.LOGIN
+        cancelCountdown()
         val context = getApplication<Application>().applicationContext
         val prefs = context.getSharedPreferences("farm_prefs", android.content.Context.MODE_PRIVATE)
-        prefs.edit().remove("logged_in_user").apply()
+        prefs.edit().remove("logged_in_user_email").apply()
     }
 
-    fun clearLoginError() {
-        _loginError.value = null
+    fun clearAuthError() {
+        _authError.value = null
     }
 
-    fun resetSignupSuccess() {
-        _signupSuccess.value = false
+    fun clearAuthSuccess() {
+        _authSuccess.value = null
     }
 
+    // ==========================================
+    // UTILITY
+    // ==========================================
+
+    private fun isValidEmail(email: String): Boolean {
+        return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+    }
+
+    private fun maskIdentifier(identifier: String, type: OtpType): String {
+        return if (type == OtpType.EMAIL) {
+            val parts = identifier.split("@")
+            if (parts.size == 2) {
+                val name = parts[0]
+                val masked = name.take(2) + "*".repeat((name.length - 2).coerceAtLeast(1)) + "@" + parts[1]
+                masked
+            } else identifier
+        } else {
+            // Mask phone: show last 4 digits
+            if (identifier.length > 4) {
+                "*".repeat(identifier.length - 4) + identifier.takeLast(4)
+            } else identifier
+        }
+    }
+
+    // ==========================================
+    // LANGUAGE / THEME
+    // ==========================================
 
     private fun loadLanguagePreference() {
         val context = getApplication<Application>().applicationContext
@@ -278,14 +544,11 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
         _currentDate.value = prefs.getString("simulated_date", "2026-06-16") ?: "2026-06-16"
     }
 
-    // Change current simulated date to test schedule alerts
     fun setSimulatedDate(newDate: String) {
-        // Validate date format YYYY-MM-DD
         try {
             val df = SimpleDateFormat("yyyy-MM-dd", Locale.US)
             df.parse(newDate)
             _currentDate.value = newDate
-            // Clear notified alerts on date change so user can re-trigger notifications for testing!
             val context = getApplication<Application>().applicationContext
             context.getSharedPreferences("farm_prefs", android.content.Context.MODE_PRIVATE)
                 .edit()
@@ -298,7 +561,6 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // Dynamic Alert Generator based on vaccination schedule and logs
     private fun generateAlerts() {
         val alertList = mutableListOf<FarmAlert>()
         val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
@@ -318,7 +580,6 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
         val vRecords = _vaccinationRecords.value
         val dRecords = _dewormingRecords.value
 
-        // Loop through the 9 scheduled vaccination events
         annualSchedules.forEach { schedule ->
             val targetDateStr = "$currentYear-${schedule.dateMonthDay}"
             val targetDate = sdf.parse(targetDateStr) ?: return@forEach
@@ -326,53 +587,32 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
             val diffMs = targetDate.time - todayDate.time
             val diffDays = (diffMs / (1000 * 60 * 60 * 24)).toInt()
 
-            // 1. Reminders before date
             if (diffDays == 7) {
-                alertList.add(
-                    FarmAlert(
-                        id = "rem_7_${schedule.dateMonthDay}",
-                        title = "Vaccination Reminder (In 7 Days)",
-                        message = "${schedule.vaccineName} for ${schedule.targetDisease} is scheduled on $targetDateStr.",
-                        type = AlertType.INFO,
-                        dateStr = targetDateStr
-                    )
-                )
+                alertList.add(FarmAlert(
+                    id = "rem_7_${schedule.dateMonthDay}",
+                    title = "Vaccination Reminder (In 7 Days)",
+                    message = "${schedule.vaccineName} for ${schedule.targetDisease} is scheduled on $targetDateStr.",
+                    type = AlertType.INFO, dateStr = targetDateStr
+                ))
             } else if (diffDays == 1) {
-                alertList.add(
-                    FarmAlert(
-                        id = "rem_1_${schedule.dateMonthDay}",
-                        title = "Vaccination Alert (Tomorrow)",
-                        message = "${schedule.vaccineName} is due tomorrow ($targetDateStr). Prepare livestock records.",
-                        type = AlertType.WARNING,
-                        dateStr = targetDateStr
-                    )
-                )
+                alertList.add(FarmAlert(
+                    id = "rem_1_${schedule.dateMonthDay}",
+                    title = "Vaccination Alert (Tomorrow)",
+                    message = "${schedule.vaccineName} is due tomorrow ($targetDateStr). Prepare livestock records.",
+                    type = AlertType.WARNING, dateStr = targetDateStr
+                ))
             } else if (diffDays == 0) {
-                alertList.add(
-                    FarmAlert(
-                        id = "rem_0_${schedule.dateMonthDay}",
-                        title = "Vaccination Day!",
-                        message = "${schedule.vaccineName} is due TODAY ($targetDateStr). Remember to log details after administration.",
-                        type = AlertType.CRITICAL,
-                        dateStr = targetDateStr
-                    )
-                )
+                alertList.add(FarmAlert(
+                    id = "rem_0_${schedule.dateMonthDay}",
+                    title = "Vaccination Day!",
+                    message = "${schedule.vaccineName} is due TODAY ($targetDateStr). Remember to log details after administration.",
+                    type = AlertType.CRITICAL, dateStr = targetDateStr
+                ))
             }
 
-            // 2. Alerts for Missed Vaccinations
-            // If the schedule date is in the past (more than 1 day ago)
             if (diffDays < 0 && animalsList.isNotEmpty()) {
-                // Check if any vaccination record matches this vaccineName administered within targetDate ± 7 days
-                val dateStart = Calendar.getInstance().apply {
-                    time = targetDate
-                    add(Calendar.DAY_OF_YEAR, -5)
-                }.time
-                val dateEnd = Calendar.getInstance().apply {
-                    time = targetDate
-                    add(Calendar.DAY_OF_YEAR, 10)
-                }.time
-
-                // Calculate percentage of animals vaccinated
+                val dateStart = Calendar.getInstance().apply { time = targetDate; add(Calendar.DAY_OF_YEAR, -5) }.time
+                val dateEnd = Calendar.getInstance().apply { time = targetDate; add(Calendar.DAY_OF_YEAR, 10) }.time
                 val vaccinatedCount = animalsList.count { animal ->
                     vRecords.any { rec ->
                         rec.animalId == animal.id &&
@@ -380,74 +620,52 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
                                 isDateWithinRange(rec.dateAdministered, dateStart, dateEnd)
                     }
                 }
-
                 if (vaccinatedCount < animalsList.size) {
                     val missedCount = animalsList.size - vaccinatedCount
-                    alertList.add(
-                        FarmAlert(
-                            id = "miss_${schedule.dateMonthDay}",
-                            title = "Missed Vaccination",
-                            message = "${schedule.vaccineName} scheduled on $targetDateStr has pending records ($vaccinatedCount/${animalsList.size} administered). $missedCount animals missed.",
-                            type = AlertType.CRITICAL,
-                            dateStr = targetDateStr
-                        )
-                    )
+                    alertList.add(FarmAlert(
+                        id = "miss_${schedule.dateMonthDay}",
+                        title = "Missed Vaccination",
+                        message = "${schedule.vaccineName} scheduled on $targetDateStr has pending records ($vaccinatedCount/${animalsList.size} administered). $missedCount animals missed.",
+                        type = AlertType.CRITICAL, dateStr = targetDateStr
+                    ))
                 }
             }
 
-            // 3. Alerts for Pending Deworming
-            // If schedule requires deworming and we are on or past the vaccination date
             if (schedule.dewormingRequired && diffDays <= 0 && animalsList.isNotEmpty()) {
-                val dateDewormStart = targetDate // Deworming scheduled on or after vaccine date
-                val dateDewormEnd = Calendar.getInstance().apply {
-                    time = targetDate
-                    add(Calendar.DAY_OF_YEAR, 14) // Within 14 days after vaccine
-                }.time
-
+                val dateDewormStart = targetDate
+                val dateDewormEnd = Calendar.getInstance().apply { time = targetDate; add(Calendar.DAY_OF_YEAR, 14) }.time
                 val dewormedCount = animalsList.count { animal ->
                     dRecords.any { rec ->
-                        rec.animalId == animal.id &&
-                                isDateWithinRange(rec.dateAdministered, dateDewormStart, dateDewormEnd)
+                        rec.animalId == animal.id && isDateWithinRange(rec.dateAdministered, dateDewormStart, dateDewormEnd)
                     }
                 }
-
                 if (dewormedCount < animalsList.size) {
                     val pendingDeworm = animalsList.size - dewormedCount
-                    // Only show alert if it is on or after the scheduled date
-                    alertList.add(
-                        FarmAlert(
-                            id = "deworm_${schedule.dateMonthDay}",
-                            title = "Pending Deworming Alert",
-                            message = "Deworming activity scheduled for ${schedule.vaccineName} ($targetDateStr) is pending for $pendingDeworm animals.",
-                            type = AlertType.WARNING,
-                            dateStr = targetDateStr
-                        )
-                    )
+                    alertList.add(FarmAlert(
+                        id = "deworm_${schedule.dateMonthDay}",
+                        title = "Pending Deworming Alert",
+                        message = "Deworming activity scheduled for ${schedule.vaccineName} ($targetDateStr) is pending for $pendingDeworm animals.",
+                        type = AlertType.WARNING, dateStr = targetDateStr
+                    ))
                 }
             }
         }
 
-        // 4. Low stock feed alerts
         _feedInventory.value.forEach { feed ->
             if (feed.quantityInStock <= feed.lowStockThreshold) {
-                alertList.add(
-                    FarmAlert(
-                        id = "feed_low_${feed.id}",
-                        title = "Low Feed Stock Alert",
-                        message = "${feed.feedName} has only ${feed.quantityInStock}${feed.unit} left (Threshold: ${feed.lowStockThreshold}${feed.unit}).",
-                        type = AlertType.WARNING,
-                        dateStr = curDateStr
-                    )
-                )
+                alertList.add(FarmAlert(
+                    id = "feed_low_${feed.id}",
+                    title = "Low Feed Stock Alert",
+                    message = "${feed.feedName} has only ${feed.quantityInStock}${feed.unit} left (Threshold: ${feed.lowStockThreshold}${feed.unit}).",
+                    type = AlertType.WARNING, dateStr = curDateStr
+                ))
             }
         }
 
         _alerts.value = alertList
 
-        // Trigger system tray notifications for newly created alerts
         val notifiedIds = getNotifiedAlertIds().toMutableSet()
         var updated = false
-
         alertList.forEach { alert ->
             if (!notifiedIds.contains(alert.id)) {
                 postSystemNotification(alert.id, alert.title, alert.message)
@@ -455,10 +673,7 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
                 updated = true
             }
         }
-
-        if (updated) {
-            saveNotifiedAlertIds(notifiedIds)
-        }
+        if (updated) saveNotifiedAlertIds(notifiedIds)
     }
 
     private fun getNotifiedAlertIds(): Set<String> {
@@ -475,25 +690,20 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun postSystemNotification(id: String, title: String, message: String) {
         val context = getApplication<Application>().applicationContext
-
         if (android.os.Build.VERSION.SDK_INT >= 33) {
             if (context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                Log.w("FarmViewModel", "Missing POST_NOTIFICATIONS permission. Skipping notification for alert $id")
+                Log.w("FarmViewModel", "Missing POST_NOTIFICATIONS permission. Skipping notification for $id")
                 return
             }
         }
-
         try {
             val intent = android.content.Intent(context, MainActivity::class.java).apply {
                 flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
             }
             val pendingIntent = android.app.PendingIntent.getActivity(
-                context,
-                id.hashCode(),
-                intent,
+                context, id.hashCode(), intent,
                 android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
             )
-
             val soundUri = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
             val builder = androidx.core.app.NotificationCompat.Builder(context, "farm_alerts_channel_v3")
                 .setSmallIcon(context.resources.getIdentifier("ic_launcher_foreground", "drawable", context.packageName).let { if (it != 0) it else android.R.drawable.ic_dialog_info })
@@ -505,12 +715,8 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
                 .setDefaults(androidx.core.app.NotificationCompat.DEFAULT_ALL)
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
-
             val notificationManager = androidx.core.app.NotificationManagerCompat.from(context)
             notificationManager.notify(id.hashCode(), builder.build())
-            Log.i("FarmViewModel", "Successfully posted system notification for alert ID: $id")
-        } catch (e: SecurityException) {
-            Log.e("FarmViewModel", "SecurityException posting notification: ${e.message}")
         } catch (e: Exception) {
             Log.e("FarmViewModel", "Error posting notification: ${e.message}")
         }
@@ -531,19 +737,7 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
     // ==========================================
     fun addAnimal(tag: String, type: AnimalType, breed: String, gender: Gender, ageCat: AgeCategory, weight: Float, health: String, pDate: String, pPrice: Float, avatar: Int) {
         viewModelScope.launch {
-            val animal = Animal(
-                tagNumber = tag,
-                type = type,
-                breed = breed,
-                gender = gender,
-                ageCategory = ageCat,
-                weight = weight,
-                healthStatus = health,
-                purchaseDate = pDate,
-                purchasePrice = pPrice,
-                avatarId = avatar
-            )
-            dbHelper.insertAnimal(animal)
+            dbHelper.insertAnimal(Animal(tagNumber = tag, type = type, breed = breed, gender = gender, ageCategory = ageCat, weight = weight, healthStatus = health, purchaseDate = pDate, purchasePrice = pPrice, avatarId = avatar))
             loadData()
         }
     }
@@ -560,18 +754,14 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
     // ==========================================
     fun logVaccination(animalId: Long, vaccine: String, date: String, notes: String) {
         viewModelScope.launch {
-            dbHelper.insertVaccinationRecord(
-                VaccinationRecord(animalId = animalId, vaccineName = vaccine, dateAdministered = date, notes = notes)
-            )
+            dbHelper.insertVaccinationRecord(VaccinationRecord(animalId = animalId, vaccineName = vaccine, dateAdministered = date, notes = notes))
             loadData()
         }
     }
 
     fun logDeworming(animalId: Long, drug: String, date: String, notes: String) {
         viewModelScope.launch {
-            dbHelper.insertDewormingRecord(
-                DewormingRecord(animalId = animalId, drugUsed = drug, dateAdministered = date, notes = notes)
-            )
+            dbHelper.insertDewormingRecord(DewormingRecord(animalId = animalId, drugUsed = drug, dateAdministered = date, notes = notes))
             loadData()
         }
     }
@@ -581,60 +771,25 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
     // ==========================================
     fun logBreeding(femaleId: Long, maleId: Long, date: String, status: PregnancyStatus, notes: String) {
         viewModelScope.launch {
-            // Estimate delivery date: sheep/goats gestation is approx 150 days (5 months)
             val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
             val breedDate = sdf.parse(date) ?: Date()
-            val cal = Calendar.getInstance().apply {
-                time = breedDate
-                add(Calendar.DAY_OF_YEAR, 150)
-            }
+            val cal = Calendar.getInstance().apply { time = breedDate; add(Calendar.DAY_OF_YEAR, 150) }
             val expectedDel = sdf.format(cal.time)
-
-            dbHelper.insertBreedingRecord(
-                BreedingRecord(
-                    femaleId = femaleId,
-                    maleId = maleId,
-                    breedingDate = date,
-                    expectedDeliveryDate = expectedDel,
-                    status = status,
-                    notes = notes
-                )
-            )
+            dbHelper.insertBreedingRecord(BreedingRecord(femaleId = femaleId, maleId = maleId, breedingDate = date, expectedDeliveryDate = expectedDel, status = status, notes = notes))
             loadData()
         }
     }
 
     fun recordDelivery(record: BreedingRecord, deliveryDate: String, offspringCount: Int, notes: String) {
         viewModelScope.launch {
-            // Update breeding record status
             val status = if (animals.value.find { it.id == record.femaleId }?.type == AnimalType.SHEEP) PregnancyStatus.LAMBED else PregnancyStatus.KIDDED
-            val updatedRecord = record.copy(
-                status = status,
-                birthDate = deliveryDate,
-                offspringCount = offspringCount,
-                notes = notes
-            )
+            val updatedRecord = record.copy(status = status, birthDate = deliveryDate, offspringCount = offspringCount, notes = notes)
             dbHelper.updateBreedingRecord(updatedRecord)
-
-            // Register offspring in Animals table
             val mother = animals.value.find { it.id == record.femaleId }
             if (mother != null) {
                 for (i in 1..offspringCount) {
                     val offspringTag = "${if (mother.type == AnimalType.SHEEP) "SH" else "GT"}-B${record.id}-$i"
-                    dbHelper.insertAnimal(
-                        Animal(
-                            tagNumber = offspringTag,
-                            type = mother.type,
-                            breed = mother.breed,
-                            gender = if (i % 2 == 0) Gender.FEMALE else Gender.MALE,
-                            ageCategory = AgeCategory.BABY.name.let { AgeCategory.BABY },
-                            weight = 3.5f,
-                            healthStatus = "Healthy",
-                            purchaseDate = deliveryDate,
-                            purchasePrice = 0f,
-                            avatarId = if (mother.type == AnimalType.SHEEP) 0 else 2
-                        )
-                    )
+                    dbHelper.insertAnimal(Animal(tagNumber = offspringTag, type = mother.type, breed = mother.breed, gender = if (i % 2 == 0) Gender.FEMALE else Gender.MALE, ageCategory = AgeCategory.BABY, weight = 3.5f, healthStatus = "Healthy", purchaseDate = deliveryDate, purchasePrice = 0f, avatarId = if (mother.type == AnimalType.SHEEP) 0 else 2))
                 }
             }
             loadData()
@@ -646,58 +801,34 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
     // ==========================================
     fun addFeedInventory(feedName: String, qty: Float, unit: String, lowThreshold: Float) {
         viewModelScope.launch {
-            dbHelper.insertFeedInventory(
-                FeedInventory(feedName = feedName, quantityInStock = qty, unit = unit, lowStockThreshold = lowThreshold)
-            )
+            dbHelper.insertFeedInventory(FeedInventory(feedName = feedName, quantityInStock = qty, unit = unit, lowStockThreshold = lowThreshold))
             loadData()
         }
     }
 
     fun logFeedConsumption(feedName: String, qty: Float, date: String) {
         viewModelScope.launch {
-            dbHelper.insertFeedConsumption(
-                FeedConsumption(date = date, feedName = feedName, quantityConsumed = qty)
-            )
+            dbHelper.insertFeedConsumption(FeedConsumption(date = date, feedName = feedName, quantityConsumed = qty))
             loadData()
         }
     }
 
     fun addFeedSchedule(feedName: String, time: String, qty: Float, group: String) {
         viewModelScope.launch {
-            dbHelper.insertFeedSchedule(
-                FeedSchedule(feedName = feedName, timeOfDay = time, quantity = qty, targetGroup = group)
-            )
+            dbHelper.insertFeedSchedule(FeedSchedule(feedName = feedName, timeOfDay = time, quantity = qty, targetGroup = group))
             loadData()
         }
     }
 
     fun purchaseFeedDeal(feedName: String, qty: Float, price: Float) {
         viewModelScope.launch {
-            val desc = "Purchased $feedName Bulk Deal"
-            dbHelper.insertFinancialRecord(
-                FinancialRecord(
-                    type = TransactionType.EXPENSE,
-                    category = TransactionCategory.FEED_EXPENSE,
-                    amount = price,
-                    date = _currentDate.value,
-                    description = desc
-                )
-            )
-
+            dbHelper.insertFinancialRecord(FinancialRecord(type = TransactionType.EXPENSE, category = TransactionCategory.FEED_EXPENSE, amount = price, date = _currentDate.value, description = "Purchased $feedName Bulk Deal"))
             val inventory = dbHelper.getAllFeedInventory()
             val currentItem = inventory.find { it.feedName.equals(feedName, ignoreCase = true) }
             if (currentItem != null) {
-                val newStock = currentItem.quantityInStock + qty
-                dbHelper.updateFeedStock(currentItem.feedName, newStock)
+                dbHelper.updateFeedStock(currentItem.feedName, currentItem.quantityInStock + qty)
             } else {
-                dbHelper.insertFeedInventory(
-                    FeedInventory(
-                        feedName = feedName,
-                        quantityInStock = qty,
-                        unit = if (feedName.contains("Block", ignoreCase = true)) "pcs" else "kg",
-                        lowStockThreshold = if (feedName.contains("Block", ignoreCase = true)) 2f else 50f
-                    )
-                )
+                dbHelper.insertFeedInventory(FeedInventory(feedName = feedName, quantityInStock = qty, unit = if (feedName.contains("Block", ignoreCase = true)) "pcs" else "kg", lowStockThreshold = if (feedName.contains("Block", ignoreCase = true)) 2f else 50f))
             }
             loadData()
         }
@@ -708,9 +839,7 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
     // ==========================================
     fun addFinancialRecord(type: TransactionType, category: TransactionCategory, amount: Float, date: String, desc: String) {
         viewModelScope.launch {
-            dbHelper.insertFinancialRecord(
-                FinancialRecord(type = type, category = category, amount = amount, date = date, description = desc)
-            )
+            dbHelper.insertFinancialRecord(FinancialRecord(type = type, category = category, amount = amount, date = date, description = desc))
             loadData()
         }
     }
