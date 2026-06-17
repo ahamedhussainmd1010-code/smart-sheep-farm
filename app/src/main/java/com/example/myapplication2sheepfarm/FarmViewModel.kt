@@ -99,6 +99,7 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
     init {
         loadLanguagePreference()
         loadThemePreference()
+        loadSimulatedDate()
         loadData()
     }
 
@@ -163,6 +164,12 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    private fun loadSimulatedDate() {
+        val context = getApplication<Application>().applicationContext
+        val prefs = context.getSharedPreferences("farm_prefs", android.content.Context.MODE_PRIVATE)
+        _currentDate.value = prefs.getString("simulated_date", "2026-06-16") ?: "2026-06-16"
+    }
+
     // Change current simulated date to test schedule alerts
     fun setSimulatedDate(newDate: String) {
         // Validate date format YYYY-MM-DD
@@ -173,7 +180,10 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
             // Clear notified alerts on date change so user can re-trigger notifications for testing!
             val context = getApplication<Application>().applicationContext
             context.getSharedPreferences("farm_prefs", android.content.Context.MODE_PRIVATE)
-                .edit().remove("notified_alerts").apply()
+                .edit()
+                .putString("simulated_date", newDate)
+                .remove("notified_alerts")
+                .apply()
             generateAlerts()
         } catch (e: Exception) {
             Log.e("FarmViewModel", "Invalid date format: $newDate")

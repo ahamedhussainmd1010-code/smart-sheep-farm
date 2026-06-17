@@ -38,6 +38,7 @@ class MainActivity : ComponentActivity() {
 
         createNotificationChannel()
         requestNotificationPermission()
+        AlarmReceiver.scheduleAlarm(this)
 
         val viewModel = FarmViewModel(application)
 
