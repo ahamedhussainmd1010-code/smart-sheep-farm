@@ -34,6 +34,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        createNotificationChannel()
+        requestNotificationPermission()
+
         val viewModel = FarmViewModel(application)
 
         setContent {
@@ -46,6 +49,27 @@ class MainActivity : ComponentActivity() {
                 ) { innerPadding ->
                     SmartSheepFarmApp(viewModel, modifier = Modifier.padding(innerPadding))
                 }
+            }
+        }
+    }
+
+    private fun createNotificationChannel() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val name = "Smart Sheep Farm Alerts"
+            val descriptionText = "Alerts for livestock vaccinations, deworming schedules, and low feed stock."
+            val importance = android.app.NotificationManager.IMPORTANCE_DEFAULT
+            val channel = android.app.NotificationChannel("farm_alerts_channel", name, importance).apply {
+                description = descriptionText
+            }
+            val notificationManager = getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+
+    private fun requestNotificationPermission() {
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 101)
             }
         }
     }

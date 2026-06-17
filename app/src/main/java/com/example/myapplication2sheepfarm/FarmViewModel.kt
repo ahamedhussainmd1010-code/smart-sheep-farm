@@ -118,6 +118,10 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
             val df = SimpleDateFormat("yyyy-MM-dd", Locale.US)
             df.parse(newDate)
             _currentDate.value = newDate
+            // Clear notified alerts on date change so user can re-trigger notifications for testing!
+            val context = getApplication<Application>().applicationContext
+            context.getSharedPreferences("farm_prefs", android.content.Context.MODE_PRIVATE)
+                .edit().remove("notified_alerts").apply()
             generateAlerts()
         } catch (e: Exception) {
             Log.e("FarmViewModel", "Invalid date format: $newDate")
@@ -269,6 +273,74 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         _alerts.value = alertList
+
+        // Trigger system tray notifications for newly created alerts
+        val notifiedIds = getNotifiedAlertIds().toMutableSet()
+        var updated = false
+
+        alertList.forEach { alert ->
+            if (!notifiedIds.contains(alert.id)) {
+                postSystemNotification(alert.id, alert.title, alert.message)
+                notifiedIds.add(alert.id)
+                updated = true
+            }
+        }
+
+        if (updated) {
+            saveNotifiedAlertIds(notifiedIds)
+        }
+    }
+
+    private fun getNotifiedAlertIds(): Set<String> {
+        val context = getApplication<Application>().applicationContext
+        val prefs = context.getSharedPreferences("farm_prefs", android.content.Context.MODE_PRIVATE)
+        return prefs.getStringSet("notified_alerts", emptySet()) ?: emptySet()
+    }
+
+    private fun saveNotifiedAlertIds(ids: Set<String>) {
+        val context = getApplication<Application>().applicationContext
+        val prefs = context.getSharedPreferences("farm_prefs", android.content.Context.MODE_PRIVATE)
+        prefs.edit().putStringSet("notified_alerts", ids).apply()
+    }
+
+    private fun postSystemNotification(id: String, title: String, message: String) {
+        val context = getApplication<Application>().applicationContext
+
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            if (context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                Log.w("FarmViewModel", "Missing POST_NOTIFICATIONS permission. Skipping notification for alert $id")
+                return
+            }
+        }
+
+        try {
+            val intent = android.content.Intent(context, MainActivity::class.java).apply {
+                flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+            val pendingIntent = android.app.PendingIntent.getActivity(
+                context,
+                id.hashCode(),
+                intent,
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+            )
+
+            val builder = androidx.core.app.NotificationCompat.Builder(context, "farm_alerts_channel")
+                .setSmallIcon(context.resources.getIdentifier("ic_launcher_foreground", "drawable", context.packageName).let { if (it != 0) it else android.R.drawable.ic_dialog_info })
+                .setContentTitle(title)
+                .setContentText(message)
+                .setStyle(androidx.core.app.NotificationCompat.BigTextStyle().bigText(message))
+                .setPriority(androidx.core.app.NotificationCompat.PRIORITY_DEFAULT)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true)
+
+            val notificationManager = androidx.core.app.NotificationManagerCompat.from(context)
+            notificationManager.notify(id.hashCode(), builder.build())
+            Log.i("FarmViewModel", "Successfully posted system notification for alert ID: $id")
+        } catch (e: SecurityException) {
+            Log.e("FarmViewModel", "SecurityException posting notification: ${e.message}")
+        } catch (e: Exception) {
+            Log.e("FarmViewModel", "Error posting notification: ${e.message}")
+        }
     }
 
     private fun isDateWithinRange(dateToCheckStr: String, start: Date, end: Date): Boolean {
