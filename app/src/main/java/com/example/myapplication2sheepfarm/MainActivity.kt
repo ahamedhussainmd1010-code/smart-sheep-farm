@@ -107,6 +107,7 @@ fun SmartSheepFarmApp(viewModel: FarmViewModel, modifier: Modifier = Modifier) {
 
     val isOnline by viewModel.isOnline.collectAsState()
     val syncMessage by viewModel.syncMessage.collectAsState()
+    val currentUser by viewModel.currentUser.collectAsState()
 
     Column(
         modifier = modifier
@@ -167,6 +168,31 @@ fun SmartSheepFarmApp(viewModel: FarmViewModel, modifier: Modifier = Modifier) {
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold
                     )
+                }
+
+                // Profile Logo / Avatar Button
+                currentUser?.let { user ->
+                    val initial = user.username.take(1).uppercase()
+                    Box(
+                        modifier = Modifier
+                            .size(30.dp)
+                            .clip(CircleShape)
+                            .background(
+                                Brush.linearGradient(
+                                    colors = listOf(FarmGreen, FarmGreenLight)
+                                )
+                            )
+                            .clickable { showSettingsDialog = true }
+                            .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = initial,
+                            color = Color.White,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
 
                 // Settings Gear Button
@@ -368,12 +394,34 @@ fun SmartSheepFarmApp(viewModel: FarmViewModel, modifier: Modifier = Modifier) {
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
+                            val initial = user.username.take(1).uppercase()
+                            Box(
+                                modifier = Modifier
+                                    .size(54.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        Brush.linearGradient(
+                                            colors = listOf(FarmGreen, FarmGreenLight)
+                                        )
+                                    )
+                                    .border(2.dp, MaterialTheme.colorScheme.outline, CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = initial,
+                                    color = Color.White,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = stringResource(R.string.logged_in_as, user.username),
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Medium
                             )
+
                             Spacer(modifier = Modifier.height(2.dp))
                             Button(
                                 onClick = {
