@@ -351,13 +351,14 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
             )
 
             val soundUri = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
-            val builder = androidx.core.app.NotificationCompat.Builder(context, "farm_alerts_channel_v2")
+            val builder = androidx.core.app.NotificationCompat.Builder(context, "farm_alerts_channel_v3")
                 .setSmallIcon(context.resources.getIdentifier("ic_launcher_foreground", "drawable", context.packageName).let { if (it != 0) it else android.R.drawable.ic_dialog_info })
                 .setContentTitle(title)
                 .setContentText(message)
                 .setStyle(androidx.core.app.NotificationCompat.BigTextStyle().bigText(message))
-                .setPriority(androidx.core.app.NotificationCompat.PRIORITY_DEFAULT)
+                .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
                 .setSound(soundUri)
+                .setDefaults(androidx.core.app.NotificationCompat.DEFAULT_ALL)
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
 

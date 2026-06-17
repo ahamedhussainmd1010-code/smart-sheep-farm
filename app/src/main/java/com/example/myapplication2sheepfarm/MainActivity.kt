@@ -61,8 +61,8 @@ class MainActivity : ComponentActivity() {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             val name = "Smart Sheep Farm Alerts"
             val descriptionText = "Alerts for livestock vaccinations, deworming schedules, and low feed stock."
-            val importance = android.app.NotificationManager.IMPORTANCE_DEFAULT
-            val channel = android.app.NotificationChannel("farm_alerts_channel_v2", name, importance).apply {
+            val importance = android.app.NotificationManager.IMPORTANCE_HIGH
+            val channel = android.app.NotificationChannel("farm_alerts_channel_v3", name, importance).apply {
                 description = descriptionText
                 // Set default system notification sound explicitly
                 val soundUri = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
