@@ -44,7 +44,7 @@
 
     <!-- Additional Localization Keys -->
     <string name="simulated_date_desc">వార్షిక షెడ్యూల్ ట్రిగ్గర్లను పరీక్షించడానికి అనుమతిస్తుంది</string>
-    <string name="purchased_for_format">$%s కి కొనుగోలు చేయబడింది</string>
+    <string name="purchased_for_format">₹%s కి కొనుగోలు చేయబడింది</string>
     <string name="tag_number_label">ట్యాగ్ సంఖ్య (ఉదా. SH-004)</string>
     <string name="type_label">రకం:</string>
     <string name="breed_label">జాతి (ఉదా. మెరినో / బోయర్)</string>
@@ -56,7 +56,7 @@
     <string name="baby_label">చిన్నది</string>
     <string name="weight_label">బరువు (కిలోలు)</string>
     <string name="health_status_label">ఆరోగ్య స్థితి (ఉదా. ఆరోగ్యంగా ఉంది)</string>
-    <string name="purchase_price_label">కొనుగోలు ధర ($)</string>
+    <string name="purchase_price_label">కొనుగోలు ధర (₹)</string>
     <string name="purchase_date_label">కొనుగోలు/పుట్టిన తేదీ (YYYY-MM-DD)</string>
     <string name="btn_register_action">నమోదు చేయి</string>
     <string name="btn_log_vaccine">💉 టీకా నమోదు</string>
@@ -119,7 +119,7 @@
     <string name="expense_btn_label">ఖర్చు 🟥</string>
     <string name="income_btn_label">ఆదాయం 🟩</string>
     <string name="category_select_format">విభాగం: %s 🔽</string>
-    <string name="amount_label">మొత్తం ($)</string>
+    <string name="amount_label">మొత్తం (₹)</string>
     <string name="description_label">వివరణ</string>
     <string name="log_ledger_label">ఖాతా నమోదు</string>
     <string name="bulk_deals_title">బల్క్ మేత డీల్స్ &amp; స్పెషల్స్</string>

@@ -44,7 +44,7 @@
 
     <!-- Additional Localization Keys -->
     <string name="simulated_date_desc">Allows testing the annual schedule triggers</string>
-    <string name="purchased_for_format">Purchased for $%s</string>
+    <string name="purchased_for_format">Purchased for ₹%s</string>
     <string name="tag_number_label">Tag Number (e.g. SH-004)</string>
     <string name="type_label">Type:</string>
     <string name="breed_label">Breed (e.g. Merino / Boer)</string>
@@ -56,7 +56,7 @@
     <string name="baby_label">Baby</string>
     <string name="weight_label">Weight (kg)</string>
     <string name="health_status_label">Health Status (e.g. Healthy)</string>
-    <string name="purchase_price_label">Purchase Price ($)</string>
+    <string name="purchase_price_label">Purchase Price (₹)</string>
     <string name="purchase_date_label">Purchase/Birth Date (YYYY-MM-DD)</string>
     <string name="btn_register_action">Register</string>
     <string name="btn_log_vaccine">💉 Log Vaccine</string>
@@ -119,7 +119,7 @@
     <string name="expense_btn_label">Expense 🟥</string>
     <string name="income_btn_label">Income 🟩</string>
     <string name="category_select_format">Category: %s 🔽</string>
-    <string name="amount_label">Amount ($)</string>
+    <string name="amount_label">Amount (₹)</string>
     <string name="description_label">Description</string>
     <string name="log_ledger_label">Log Ledger</string>
     <string name="bulk_deals_title">Bulk Feed Deals &amp; Specials</string>

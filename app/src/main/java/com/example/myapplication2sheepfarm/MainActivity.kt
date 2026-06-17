@@ -729,7 +729,7 @@ fun DashboardTab(viewModel: FarmViewModel) {
                     Column {
                         Text(text = stringResource(R.string.ledger_net_balance), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 12.sp)
                         Text(
-                            text = if (netFinances >= 0) "+$${String.format("%.2f", netFinances)}" else "-$${String.format("%.2f", kotlin.math.abs(netFinances))}",
+                            text = if (netFinances >= 0) "+₹${String.format("%.2f", netFinances)}" else "-₹${String.format("%.2f", kotlin.math.abs(netFinances))}",
                             color = if (netFinances >= 0) FarmGreenLight else RedAlert,
                             fontSize = 22.sp,
                             fontWeight = FontWeight.Black
@@ -1960,7 +1960,7 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
                         Text(text = title, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                         Text(text = desc, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 10.sp)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text(text = "$${String.format(java.util.Locale.US, "%.2f", price)}", color = FarmGreenLight, fontWeight = FontWeight.Black, fontSize = 13.sp)
+                        Text(text = "₹${String.format(java.util.Locale.US, "%.2f", price)}", color = FarmGreenLight, fontWeight = FontWeight.Black, fontSize = 13.sp)
                     }
 
                     Button(
@@ -2347,7 +2347,7 @@ fun FinancesTab(viewModel: FarmViewModel) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text(text = stringResource(R.string.total_income_label), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 11.sp)
                         Text(
-                            "$${String.format("%.2f", totalIncome)}",
+                            "₹${String.format("%.2f", totalIncome)}",
                             color = FarmGreenLight,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold
@@ -2364,7 +2364,7 @@ fun FinancesTab(viewModel: FarmViewModel) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text(text = stringResource(R.string.total_expenses_label), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 11.sp)
                         Text(
-                            "$${String.format("%.2f", totalExpense)}",
+                            "₹${String.format("%.2f", totalExpense)}",
                             color = RedAlert,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold
@@ -2458,7 +2458,7 @@ fun FinancesTab(viewModel: FarmViewModel) {
                         Text("${trans.category.name} | ${trans.date}", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 11.sp)
                     }
                     Text(
-                        text = if (isIncome) "+$${trans.amount}" else "-$${trans.amount}",
+                        text = if (isIncome) "+₹${trans.amount}" else "-₹${trans.amount}",
                         color = if (isIncome) FarmGreenLight else RedAlert,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
