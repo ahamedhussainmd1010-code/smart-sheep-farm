@@ -17,6 +17,10 @@ enum class AlertType {
     INFO, WARNING, CRITICAL
 }
 
+enum class AppLanguage {
+    ENGLISH, HINDI, TELUGU
+}
+
 data class FarmAlert(
     val id: String,
     val title: String,
@@ -62,6 +66,9 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
     private val _currentDate = MutableStateFlow("2026-06-16")
     val currentDate: StateFlow<String> = _currentDate.asStateFlow()
 
+    private val _currentLanguage = MutableStateFlow(AppLanguage.ENGLISH)
+    val currentLanguage: StateFlow<AppLanguage> = _currentLanguage.asStateFlow()
+
     // Connection Sync State simulation
     private val _isOnline = MutableStateFlow(true)
     val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
@@ -83,7 +90,26 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
     )
 
     init {
+        loadLanguagePreference()
         loadData()
+    }
+
+    private fun loadLanguagePreference() {
+        val context = getApplication<Application>().applicationContext
+        val prefs = context.getSharedPreferences("farm_prefs", android.content.Context.MODE_PRIVATE)
+        val langStr = prefs.getString("selected_language", AppLanguage.ENGLISH.name) ?: AppLanguage.ENGLISH.name
+        _currentLanguage.value = try {
+            AppLanguage.valueOf(langStr)
+        } catch (e: Exception) {
+            AppLanguage.ENGLISH
+        }
+    }
+
+    fun setLanguage(lang: AppLanguage) {
+        _currentLanguage.value = lang
+        val context = getApplication<Application>().applicationContext
+        val prefs = context.getSharedPreferences("farm_prefs", android.content.Context.MODE_PRIVATE)
+        prefs.edit().putString("selected_language", lang.name).apply()
     }
 
     fun loadData() {
