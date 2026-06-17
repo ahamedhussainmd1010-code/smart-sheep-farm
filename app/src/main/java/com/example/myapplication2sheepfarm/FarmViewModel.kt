@@ -563,6 +563,38 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun purchaseFeedDeal(feedName: String, qty: Float, price: Float) {
+        viewModelScope.launch {
+            val desc = "Purchased $feedName Bulk Deal"
+            dbHelper.insertFinancialRecord(
+                FinancialRecord(
+                    type = TransactionType.EXPENSE,
+                    category = TransactionCategory.FEED_EXPENSE,
+                    amount = price,
+                    date = _currentDate.value,
+                    description = desc
+                )
+            )
+
+            val inventory = dbHelper.getAllFeedInventory()
+            val currentItem = inventory.find { it.feedName.equals(feedName, ignoreCase = true) }
+            if (currentItem != null) {
+                val newStock = currentItem.quantityInStock + qty
+                dbHelper.updateFeedStock(currentItem.feedName, newStock)
+            } else {
+                dbHelper.insertFeedInventory(
+                    FeedInventory(
+                        feedName = feedName,
+                        quantityInStock = qty,
+                        unit = if (feedName.contains("Block", ignoreCase = true)) "pcs" else "kg",
+                        lowStockThreshold = if (feedName.contains("Block", ignoreCase = true)) 2f else 50f
+                    )
+                )
+            }
+            loadData()
+        }
+    }
+
     // ==========================================
     // FINANCIAL OPERATIONS
     // ==========================================

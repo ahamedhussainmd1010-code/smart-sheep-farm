@@ -122,4 +122,5 @@
     <string name="amount_label">Amount ($)</string>
     <string name="description_label">Description</string>
     <string name="log_ledger_label">Log Ledger</string>
+    <string name="bulk_deals_title">Bulk Feed Deals &amp; Specials</string>
 </resources>

@@ -122,4 +122,5 @@
     <string name="amount_label">మొత్తం ($)</string>
     <string name="description_label">వివరణ</string>
     <string name="log_ledger_label">ఖాతా నమోదు</string>
+    <string name="bulk_deals_title">బల్క్ మేత డీల్స్ &amp; స్పెషల్స్</string>
 </resources>

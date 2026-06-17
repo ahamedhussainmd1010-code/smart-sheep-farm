@@ -1817,9 +1817,76 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
             }
         }
 
+        // Bulk Deals Section Header
+        item {
+            Text(
+                text = "🏷️ " + stringResource(R.string.bulk_deals_title),
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 10.dp)
+            )
+        }
+
+        // Active Bulk Deals Catalog
+        val deals = listOf(
+            Triple("Alfalfa Hay", Pair(500f, 150f), Triple("alfalfa_deal", "Premium Alfalfa Hay Bulk Deal", "500kg Bulk Pack • Save 25%")),
+            Triple("Concentrate Pellets", Pair(200f, 80f), Triple("pellets_deal", "Nutritional Pellets Combo Pack", "200kg Combo Pack • Save 15%")),
+            Triple("Mineral Blocks", Pair(10f, 40f), Triple("salt_blocks_deal", "Himalayan Mineral Salt Block", "10 units Pack • Save 20%"))
+        )
+
+        items(deals) { (feedName, specs, details) ->
+            val (qty, price) = specs
+            val (drawableName, title, desc) = details
+
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val context = androidx.compose.ui.platform.LocalContext.current
+                    val resId = context.resources.getIdentifier(drawableName, "drawable", context.packageName)
+                    if (resId != 0) {
+                        androidx.compose.foundation.Image(
+                            painter = androidx.compose.ui.res.painterResource(id = resId),
+                            contentDescription = title,
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                        )
+                    }
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = title, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        Text(text = desc, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 10.sp)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(text = "$${String.format(java.util.Locale.US, "%.2f", price)}", color = FarmGreenLight, fontWeight = FontWeight.Black, fontSize = 13.sp)
+                    }
+
+                    Button(
+                        onClick = {
+                            viewModel.purchaseFeedDeal(feedName, qty, price)
+                            android.widget.Toast.makeText(context, "Purchased $title!", android.widget.Toast.LENGTH_SHORT).show()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = FarmGreen),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text(text = "Buy", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    }
+                }
+            }
+        }
+
         // Feed consumption log heading
         item {
-            Text(text = stringResource(R.string.consumption_logs_title), color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            Text(text = stringResource(R.string.consumption_logs_title), color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 10.dp))
         }
 
         if (consumptionLogs.isEmpty()) {
