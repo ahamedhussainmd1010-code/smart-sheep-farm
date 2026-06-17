@@ -1741,6 +1741,39 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
             }
         }
 
+        // Feed Photo Card
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column {
+                    val context = androidx.compose.ui.platform.LocalContext.current
+                    val resId = context.resources.getIdentifier("sheep_food", "drawable", context.packageName)
+                    if (resId != 0) {
+                        androidx.compose.foundation.Image(
+                            painter = androidx.compose.ui.res.painterResource(id = resId),
+                            contentDescription = "Sheep Feed Photo",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(140.dp)
+                                .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                        )
+                    }
+                    Box(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = "🌾 High-Quality Alfalfa, Pellets & Minerals",
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        }
+
         // Feed stocks
         item {
             Card(
