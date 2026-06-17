@@ -21,6 +21,10 @@ enum class AppLanguage {
     ENGLISH, HINDI, TELUGU
 }
 
+enum class AppTheme {
+    SYSTEM, LIGHT, DARK
+}
+
 data class FarmAlert(
     val id: String,
     val title: String,
@@ -69,6 +73,9 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
     private val _currentLanguage = MutableStateFlow(AppLanguage.ENGLISH)
     val currentLanguage: StateFlow<AppLanguage> = _currentLanguage.asStateFlow()
 
+    private val _currentTheme = MutableStateFlow(AppTheme.SYSTEM)
+    val currentTheme: StateFlow<AppTheme> = _currentTheme.asStateFlow()
+
     // Connection Sync State simulation
     private val _isOnline = MutableStateFlow(true)
     val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
@@ -91,6 +98,7 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         loadLanguagePreference()
+        loadThemePreference()
         loadData()
     }
 
@@ -110,6 +118,24 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
         val context = getApplication<Application>().applicationContext
         val prefs = context.getSharedPreferences("farm_prefs", android.content.Context.MODE_PRIVATE)
         prefs.edit().putString("selected_language", lang.name).apply()
+    }
+
+    private fun loadThemePreference() {
+        val context = getApplication<Application>().applicationContext
+        val prefs = context.getSharedPreferences("farm_prefs", android.content.Context.MODE_PRIVATE)
+        val themeStr = prefs.getString("selected_theme", AppTheme.SYSTEM.name) ?: AppTheme.SYSTEM.name
+        _currentTheme.value = try {
+            AppTheme.valueOf(themeStr)
+        } catch (e: Exception) {
+            AppTheme.SYSTEM
+        }
+    }
+
+    fun setTheme(theme: AppTheme) {
+        _currentTheme.value = theme
+        val context = getApplication<Application>().applicationContext
+        val prefs = context.getSharedPreferences("farm_prefs", android.content.Context.MODE_PRIVATE)
+        prefs.edit().putString("selected_theme", theme.name).apply()
     }
 
     fun loadData() {

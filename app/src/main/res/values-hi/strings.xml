@@ -11,6 +11,10 @@
     <string name="language_english">English (अंग्रेजी)</string>
     <string name="language_hindi">Hindi (हिन्दी)</string>
     <string name="language_telugu">Telugu (తెలుగు)</string>
+    <string name="theme_title">थीम चुनें</string>
+    <string name="theme_system">सिस्टम डिफ़ॉल्ट</string>
+    <string name="theme_light">लाइट मोड</string>
+    <string name="theme_dark">डार्क मोड</string>
     <string name="simulated_date">वर्तमान सिम्युलेटेड तिथि</string>
     <string name="change_date">तिथि बदलें</string>
     <string name="active_alerts">सक्रिय अलर्ट और अनुस्मारक</string>

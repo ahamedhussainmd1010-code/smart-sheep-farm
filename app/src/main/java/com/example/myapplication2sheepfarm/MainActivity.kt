@@ -42,7 +42,8 @@ class MainActivity : ComponentActivity() {
         val viewModel = FarmViewModel(application)
 
         setContent {
-            MyApplication2Theme {
+            val currentTheme by viewModel.currentTheme.collectAsState()
+            MyApplication2Theme(theme = currentTheme) {
                 LocalizedApp(viewModel) {
                     Scaffold(
                         modifier = Modifier.fillMaxSize(),
@@ -104,13 +105,13 @@ fun SmartSheepFarmApp(viewModel: FarmViewModel, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(SlateDark)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         // App Header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(SlateCardDark)
+                .background(MaterialTheme.colorScheme.surface)
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
@@ -118,13 +119,13 @@ fun SmartSheepFarmApp(viewModel: FarmViewModel, modifier: Modifier = Modifier) {
             Column {
                 Text(
                     text = stringResource(R.string.app_name),
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = stringResource(R.string.app_subtitle),
-                    color = TextGray,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     fontSize = 11.sp
                 )
             }
@@ -182,7 +183,7 @@ fun SmartSheepFarmApp(viewModel: FarmViewModel, modifier: Modifier = Modifier) {
             ) {
                 Text(
                     text = syncMessage,
-                    color = if (isOnline) FarmGreenLight else TextGray,
+                    color = if (isOnline) FarmGreenLight else MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                     fontSize = 10.sp,
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center
@@ -207,7 +208,7 @@ fun SmartSheepFarmApp(viewModel: FarmViewModel, modifier: Modifier = Modifier) {
 
         // Custom Bottom Navigation Bar
         NavigationBar(
-            containerColor = SlateCardDark,
+            containerColor = MaterialTheme.colorScheme.surface,
             tonalElevation = 8.dp,
             modifier = Modifier.height(72.dp)
         ) {
@@ -231,12 +232,12 @@ fun SmartSheepFarmApp(viewModel: FarmViewModel, modifier: Modifier = Modifier) {
                             text = stringResource(details.first),
                             fontSize = 10.sp,
                             fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal,
-                            color = if (selectedTab == tab) FarmGreenLight else TextGray
+                            color = if (selectedTab == tab) FarmGreenLight else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
                     },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = FarmGreenLight,
-                        unselectedIconColor = TextGray,
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         indicatorColor = FarmGreen.copy(alpha = 0.3f)
                     )
                 )
@@ -247,11 +248,13 @@ fun SmartSheepFarmApp(viewModel: FarmViewModel, modifier: Modifier = Modifier) {
     // Settings Dialog
     if (showSettingsDialog) {
         val currentLanguage by viewModel.currentLanguage.collectAsState()
+        val currentTheme by viewModel.currentTheme.collectAsState()
         var tempLanguage by remember { mutableStateOf(currentLanguage) }
+        var tempTheme by remember { mutableStateOf(currentTheme) }
 
         Dialog(onDismissRequest = { showSettingsDialog = false }) {
             Card(
-                colors = CardDefaults.cardColors(containerColor = SlateCardDark),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 border = BorderStroke(2.dp, FarmGreen),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -264,14 +267,14 @@ fun SmartSheepFarmApp(viewModel: FarmViewModel, modifier: Modifier = Modifier) {
                 ) {
                     Text(
                         text = stringResource(R.string.settings_title),
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp
                     )
                     
                     Text(
                         text = stringResource(R.string.select_language),
-                        color = TextGray,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                         fontSize = 14.sp,
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.Start
@@ -292,16 +295,55 @@ fun SmartSheepFarmApp(viewModel: FarmViewModel, modifier: Modifier = Modifier) {
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(8.dp))
                                     .background(if (tempLanguage == lang) FarmGreen.copy(alpha = 0.2f) else Color.Transparent)
-                                    .border(1.dp, if (tempLanguage == lang) FarmGreen else BorderGray, RoundedCornerShape(8.dp))
+                                    .border(1.dp, if (tempLanguage == lang) FarmGreen else MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
                                     .clickable { tempLanguage = lang }
                                     .padding(12.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(text = label, color = Color.White, fontSize = 14.sp)
+                                Text(text = label, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                                 if (tempLanguage == lang) {
                                     Text(text = "✓", color = FarmGreenLight, fontWeight = FontWeight.Bold)
                                 }
+                            }
+                        }
+                    }
+
+                    Text(
+                        text = stringResource(R.string.theme_title),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        fontSize = 14.sp,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Start
+                    )
+
+                    // Theme options
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        listOf(
+                            AppTheme.SYSTEM to stringResource(R.string.theme_system),
+                            AppTheme.LIGHT to stringResource(R.string.theme_light),
+                            AppTheme.DARK to stringResource(R.string.theme_dark)
+                        ).forEach { (themeOpt, label) ->
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (tempTheme == themeOpt) FarmGreen.copy(alpha = 0.2f) else Color.Transparent)
+                                    .border(1.dp, if (tempTheme == themeOpt) FarmGreen else MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
+                                    .clickable { tempTheme = themeOpt }
+                                    .padding(vertical = 10.dp, horizontal = 4.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = label,
+                                    color = if (tempTheme == themeOpt) FarmGreenLight else MaterialTheme.colorScheme.onSurface,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (tempTheme == themeOpt) FontWeight.Bold else FontWeight.Normal,
+                                    textAlign = TextAlign.Center
+                                )
                             }
                         }
                     }
@@ -313,17 +355,18 @@ fun SmartSheepFarmApp(viewModel: FarmViewModel, modifier: Modifier = Modifier) {
                         OutlinedButton(
                             onClick = { showSettingsDialog = false },
                             modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
                         ) {
                             Text(stringResource(R.string.cancel))
                         }
                         Button(
                             onClick = {
                                 viewModel.setLanguage(tempLanguage)
+                                viewModel.setTheme(tempTheme)
                                 showSettingsDialog = false
                             },
                             modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.buttonColors(containerColor = FarmGreen)
+                            colors = ButtonDefaults.buttonColors(containerColor = FarmGreen, contentColor = MaterialTheme.colorScheme.onSurface)
                         ) {
                             Text(stringResource(R.string.apply))
                         }
@@ -368,8 +411,8 @@ fun DashboardTab(viewModel: FarmViewModel) {
         // Time & Simulated Controls Card
         item {
             Card(
-                colors = CardDefaults.cardColors(containerColor = SlateCardDark),
-                border = BorderStroke(1.dp, BorderGray)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
             ) {
                 Row(
                     modifier = Modifier
@@ -379,7 +422,7 @@ fun DashboardTab(viewModel: FarmViewModel) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text(text = stringResource(R.string.simulated_date), color = TextGray, fontSize = 12.sp)
+                        Text(text = stringResource(R.string.simulated_date), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 12.sp)
                         Text(
                             text = simulatedDate,
                             color = FarmAccent,
@@ -388,7 +431,7 @@ fun DashboardTab(viewModel: FarmViewModel) {
                         )
                         Text(
                             text = stringResource(R.string.simulated_date_desc),
-                            color = TextGray.copy(alpha = 0.7f),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f).copy(alpha = 0.7f),
                             fontSize = 10.sp
                         )
                     }
@@ -406,7 +449,7 @@ fun DashboardTab(viewModel: FarmViewModel) {
         item {
             Text(
                 text = "🔔 " + stringResource(R.string.active_alerts) + " (${alerts.size})",
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -416,7 +459,7 @@ fun DashboardTab(viewModel: FarmViewModel) {
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = SlateCardDark.copy(alpha = 0.5f))
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
                 ) {
                     Box(
                         modifier = Modifier
@@ -426,7 +469,7 @@ fun DashboardTab(viewModel: FarmViewModel) {
                     ) {
                         Text(
                             text = stringResource(R.string.no_active_alerts),
-                            color = TextGray,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                             fontSize = 12.sp,
                             textAlign = TextAlign.Center
                         )
@@ -472,14 +515,14 @@ fun DashboardTab(viewModel: FarmViewModel) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = prefix + alert.title,
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 13.sp
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = alert.message,
-                                color = Color.White.copy(alpha = 0.9f),
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
                                 fontSize = 12.sp
                             )
                         }
@@ -492,7 +535,7 @@ fun DashboardTab(viewModel: FarmViewModel) {
         item {
             Text(
                 text = "📊 " + stringResource(R.string.livestock_metrics),
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(top = 8.dp)
@@ -507,8 +550,8 @@ fun DashboardTab(viewModel: FarmViewModel) {
                 // Sheep card
                 Card(
                     modifier = Modifier.weight(1f),
-                    colors = CardDefaults.cardColors(containerColor = SlateCardDark),
-                    border = BorderStroke(1.dp, BorderGray)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
                         Row(
@@ -516,7 +559,7 @@ fun DashboardTab(viewModel: FarmViewModel) {
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(text = stringResource(R.string.sheep_label) + " (🐑)", color = White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text(text = stringResource(R.string.sheep_label) + " (🐑)", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                             Text(
                                 text = totalSheep.toString(),
                                 color = FarmGreenLight,
@@ -526,13 +569,13 @@ fun DashboardTab(viewModel: FarmViewModel) {
                         }
                         HorizontalDivider(
                             modifier = Modifier.padding(vertical = 8.dp),
-                            color = BorderGray
+                            color = MaterialTheme.colorScheme.outline
                         )
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(text = stringResource(R.string.adults_label) + ": $adultSheep", color = TextGray, fontSize = 11.sp)
+                            Text(text = stringResource(R.string.adults_label) + ": $adultSheep", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 11.sp)
                             Text(text = stringResource(R.string.lambs_label) + ": $babySheep", color = FarmAccent, fontSize = 11.sp)
                         }
                     }
@@ -541,8 +584,8 @@ fun DashboardTab(viewModel: FarmViewModel) {
                 // Goats card
                 Card(
                     modifier = Modifier.weight(1f),
-                    colors = CardDefaults.cardColors(containerColor = SlateCardDark),
-                    border = BorderStroke(1.dp, BorderGray)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
                         Row(
@@ -550,7 +593,7 @@ fun DashboardTab(viewModel: FarmViewModel) {
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(text = stringResource(R.string.goats_label) + " (🐐)", color = White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text(text = stringResource(R.string.goats_label) + " (🐐)", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                             Text(
                                 text = totalGoats.toString(),
                                 color = FarmGreenLight,
@@ -560,13 +603,13 @@ fun DashboardTab(viewModel: FarmViewModel) {
                         }
                         HorizontalDivider(
                             modifier = Modifier.padding(vertical = 8.dp),
-                            color = BorderGray
+                            color = MaterialTheme.colorScheme.outline
                         )
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(text = stringResource(R.string.adults_label) + ": $adultGoats", color = TextGray, fontSize = 11.sp)
+                            Text(text = stringResource(R.string.adults_label) + ": $adultGoats", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 11.sp)
                             Text(text = stringResource(R.string.kids_label) + ": $babyGoats", color = FarmAccent, fontSize = 11.sp)
                         }
                     }
@@ -577,8 +620,8 @@ fun DashboardTab(viewModel: FarmViewModel) {
         // Financial Net Stats
         item {
             Card(
-                colors = CardDefaults.cardColors(containerColor = SlateCardDark),
-                border = BorderStroke(1.dp, BorderGray),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -589,7 +632,7 @@ fun DashboardTab(viewModel: FarmViewModel) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text(text = stringResource(R.string.ledger_net_balance), color = TextGray, fontSize = 12.sp)
+                        Text(text = stringResource(R.string.ledger_net_balance), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 12.sp)
                         Text(
                             text = if (netFinances >= 0) "+$${String.format("%.2f", netFinances)}" else "-$${String.format("%.2f", kotlin.math.abs(netFinances))}",
                             color = if (netFinances >= 0) FarmGreenLight else RedAlert,
@@ -605,8 +648,8 @@ fun DashboardTab(viewModel: FarmViewModel) {
         // Annual Schedule Reference Guide
         item {
             Card(
-                colors = CardDefaults.cardColors(containerColor = SlateCardDark),
-                border = BorderStroke(1.dp, BorderGray),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 16.dp)
@@ -614,7 +657,7 @@ fun DashboardTab(viewModel: FarmViewModel) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = stringResource(R.string.annual_schedule_ref),
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp
                     )
@@ -628,7 +671,7 @@ fun DashboardTab(viewModel: FarmViewModel) {
                         ) {
                             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Text(sch.dateMonthDay.replace("-", "/"), color = FarmAccent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                                Text(sch.vaccineName, color = Color.White, fontSize = 12.sp)
+                                Text(sch.vaccineName, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp)
                             }
                             if (sch.dewormingRequired) {
                                 Text("+ Deworming 💊", color = FarmGreenLight, fontSize = 10.sp, fontWeight = FontWeight.Bold)
@@ -644,7 +687,7 @@ fun DashboardTab(viewModel: FarmViewModel) {
     if (showDatePicker) {
         Dialog(onDismissRequest = { showDatePicker = false }) {
             Card(
-                colors = CardDefaults.cardColors(containerColor = SlateCardDark),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 border = BorderStroke(2.dp, FarmGreen),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -657,19 +700,19 @@ fun DashboardTab(viewModel: FarmViewModel) {
                 ) {
                     Text(
                         text = stringResource(R.string.set_simulated_date),
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp
                     )
                     OutlinedTextField(
                         value = inputDate,
                         onValueChange = { inputDate = it },
-                        label = { Text("Date (YYYY-MM-DD)", color = TextGray) },
+                        label = { Text("Date (YYYY-MM-DD)", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)) },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = FarmGreen,
-                            unfocusedBorderColor = BorderGray,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                         )
                     )
                     Row(
@@ -679,7 +722,7 @@ fun DashboardTab(viewModel: FarmViewModel) {
                         OutlinedButton(
                             onClick = { showDatePicker = false },
                             modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
                         ) {
                             Text(text = stringResource(R.string.cancel))
                         }
@@ -752,15 +795,15 @@ fun LivestockTab(viewModel: FarmViewModel) {
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                placeholder = { Text(text = stringResource(R.string.search_placeholder), color = TextGray, fontSize = 12.sp) },
+                placeholder = { Text(text = stringResource(R.string.search_placeholder), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 12.sp) },
                 modifier = Modifier
                     .weight(1f)
                     .height(52.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = FarmGreen,
-                    unfocusedBorderColor = BorderGray,
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                 ),
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true
@@ -796,12 +839,12 @@ fun LivestockTab(viewModel: FarmViewModel) {
                 FilterChip(
                     selected = isSelected,
                     onClick = { filterType = key },
-                    label = { Text(text = stringResource(resId), color = if (isSelected) Color.White else TextGray, fontSize = 11.sp) },
+                    label = { Text(text = stringResource(resId), color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 11.sp) },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = FarmGreen,
-                        containerColor = SlateCardDark
+                        containerColor = MaterialTheme.colorScheme.surface
                     ),
-                    border = BorderStroke(1.dp, if (isSelected) FarmGreenLight else BorderGray)
+                    border = BorderStroke(1.dp, if (isSelected) FarmGreenLight else MaterialTheme.colorScheme.outline)
                 )
             }
         }
@@ -814,7 +857,7 @@ fun LivestockTab(viewModel: FarmViewModel) {
                     .fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = stringResource(R.string.no_livestock_found), color = TextGray)
+                Text(text = stringResource(R.string.no_livestock_found), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
             }
         } else {
             LazyColumn(
@@ -823,8 +866,8 @@ fun LivestockTab(viewModel: FarmViewModel) {
             ) {
                 items(filteredAnimals) { animal ->
                     Card(
-                        colors = CardDefaults.cardColors(containerColor = SlateCardDark),
-                        border = BorderStroke(1.dp, BorderGray)
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                     ) {
                         Row(
                             modifier = Modifier
@@ -858,7 +901,7 @@ fun LivestockTab(viewModel: FarmViewModel) {
                                 ) {
                                     Text(
                                         text = animal.tagNumber,
-                                        color = Color.White,
+                                        color = MaterialTheme.colorScheme.onSurface,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 15.sp
                                     )
@@ -871,7 +914,7 @@ fun LivestockTab(viewModel: FarmViewModel) {
                                 }
                                 Text(
                                     text = "${animal.breed} | ${animal.ageCategory} | ${animal.weight}kg",
-                                    color = TextGray,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                                     fontSize = 12.sp
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
@@ -899,7 +942,7 @@ fun LivestockTab(viewModel: FarmViewModel) {
                                     if (animal.purchasePrice > 0f) {
                                         Text(
                                             text = stringResource(R.string.purchased_for_format, animal.purchasePrice.toString()),
-                                            color = TextGray,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                                             fontSize = 10.sp
                                         )
                                     }
@@ -920,7 +963,7 @@ fun LivestockTab(viewModel: FarmViewModel) {
     if (showAddAnimalDialog) {
         Dialog(onDismissRequest = { showAddAnimalDialog = false }) {
             Card(
-                colors = CardDefaults.cardColors(containerColor = SlateCardDark),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 border = BorderStroke(2.dp, FarmGreen),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -933,7 +976,7 @@ fun LivestockTab(viewModel: FarmViewModel) {
                 ) {
                     Text(
                         text = stringResource(R.string.register_new_livestock),
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
                         textAlign = TextAlign.Center,
@@ -943,12 +986,12 @@ fun LivestockTab(viewModel: FarmViewModel) {
                     OutlinedTextField(
                         value = tagInput,
                         onValueChange = { tagInput = it },
-                        label = { Text(text = stringResource(R.string.tag_number_label), color = TextGray) },
+                        label = { Text(text = stringResource(R.string.tag_number_label), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)) },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = FarmGreen,
-                            unfocusedBorderColor = BorderGray,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                         ),
                         singleLine = true
                     )
@@ -959,7 +1002,7 @@ fun LivestockTab(viewModel: FarmViewModel) {
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(text = stringResource(R.string.type_label), color = Color.White, modifier = Modifier.width(60.dp))
+                        Text(text = stringResource(R.string.type_label), color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.width(60.dp))
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
                             modifier = Modifier.weight(1f)
@@ -967,7 +1010,7 @@ fun LivestockTab(viewModel: FarmViewModel) {
                             Button(
                                 onClick = { typeInput = AnimalType.SHEEP },
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (typeInput == AnimalType.SHEEP) FarmGreen else SlateDark
+                                    containerColor = if (typeInput == AnimalType.SHEEP) FarmGreen else MaterialTheme.colorScheme.background, contentColor = if (typeInput == AnimalType.SHEEP) Color.White else MaterialTheme.colorScheme.onBackground
                                 ),
                                 modifier = Modifier.weight(1f)
                             ) {
@@ -976,7 +1019,7 @@ fun LivestockTab(viewModel: FarmViewModel) {
                             Button(
                                 onClick = { typeInput = AnimalType.GOAT },
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (typeInput == AnimalType.GOAT) FarmGreen else SlateDark
+                                    containerColor = if (typeInput == AnimalType.GOAT) FarmGreen else MaterialTheme.colorScheme.background, contentColor = if (typeInput == AnimalType.GOAT) Color.White else MaterialTheme.colorScheme.onBackground
                                 ),
                                 modifier = Modifier.weight(1f)
                             ) {
@@ -988,12 +1031,12 @@ fun LivestockTab(viewModel: FarmViewModel) {
                     OutlinedTextField(
                         value = breedInput,
                         onValueChange = { breedInput = it },
-                        label = { Text(text = stringResource(R.string.breed_label), color = TextGray) },
+                        label = { Text(text = stringResource(R.string.breed_label), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)) },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = FarmGreen,
-                            unfocusedBorderColor = BorderGray,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                         ),
                         singleLine = true
                     )
@@ -1004,12 +1047,12 @@ fun LivestockTab(viewModel: FarmViewModel) {
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(text = stringResource(R.string.gender_label), color = Color.White, modifier = Modifier.width(60.dp))
+                        Text(text = stringResource(R.string.gender_label), color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.width(60.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.weight(1f)) {
                             Button(
                                 onClick = { genderInput = Gender.FEMALE },
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (genderInput == Gender.FEMALE) FarmGreen else SlateDark
+                                    containerColor = if (genderInput == Gender.FEMALE) FarmGreen else MaterialTheme.colorScheme.background, contentColor = if (genderInput == Gender.FEMALE) Color.White else MaterialTheme.colorScheme.onBackground
                                 ),
                                 modifier = Modifier.weight(1f)
                             ) {
@@ -1018,7 +1061,7 @@ fun LivestockTab(viewModel: FarmViewModel) {
                             Button(
                                 onClick = { genderInput = Gender.MALE },
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (genderInput == Gender.MALE) FarmGreen else SlateDark
+                                    containerColor = if (genderInput == Gender.MALE) FarmGreen else MaterialTheme.colorScheme.background, contentColor = if (genderInput == Gender.MALE) Color.White else MaterialTheme.colorScheme.onBackground
                                 ),
                                 modifier = Modifier.weight(1f)
                             ) {
@@ -1033,12 +1076,12 @@ fun LivestockTab(viewModel: FarmViewModel) {
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(text = stringResource(R.string.age_label), color = Color.White, modifier = Modifier.width(60.dp))
+                        Text(text = stringResource(R.string.age_label), color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.width(60.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.weight(1f)) {
                             Button(
                                 onClick = { ageCatInput = AgeCategory.ADULT },
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (ageCatInput == AgeCategory.ADULT) FarmGreen else SlateDark
+                                    containerColor = if (ageCatInput == AgeCategory.ADULT) FarmGreen else MaterialTheme.colorScheme.background, contentColor = if (ageCatInput == AgeCategory.ADULT) Color.White else MaterialTheme.colorScheme.onBackground
                                 ),
                                 modifier = Modifier.weight(1f)
                             ) {
@@ -1047,7 +1090,7 @@ fun LivestockTab(viewModel: FarmViewModel) {
                             Button(
                                 onClick = { ageCatInput = AgeCategory.BABY },
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (ageCatInput == AgeCategory.BABY) FarmGreen else SlateDark
+                                    containerColor = if (ageCatInput == AgeCategory.BABY) FarmGreen else MaterialTheme.colorScheme.background, contentColor = if (ageCatInput == AgeCategory.BABY) Color.White else MaterialTheme.colorScheme.onBackground
                                 ),
                                 modifier = Modifier.weight(1f)
                             ) {
@@ -1059,12 +1102,12 @@ fun LivestockTab(viewModel: FarmViewModel) {
                     OutlinedTextField(
                         value = weightInput,
                         onValueChange = { weightInput = it },
-                        label = { Text(text = stringResource(R.string.weight_label), color = TextGray) },
+                        label = { Text(text = stringResource(R.string.weight_label), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)) },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = FarmGreen,
-                            unfocusedBorderColor = BorderGray,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                         ),
                         singleLine = true
                     )
@@ -1072,12 +1115,12 @@ fun LivestockTab(viewModel: FarmViewModel) {
                     OutlinedTextField(
                         value = healthInput,
                         onValueChange = { healthInput = it },
-                        label = { Text(text = stringResource(R.string.health_status_label), color = TextGray) },
+                        label = { Text(text = stringResource(R.string.health_status_label), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)) },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = FarmGreen,
-                            unfocusedBorderColor = BorderGray,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                         ),
                         singleLine = true
                     )
@@ -1085,12 +1128,12 @@ fun LivestockTab(viewModel: FarmViewModel) {
                     OutlinedTextField(
                         value = pPriceInput,
                         onValueChange = { pPriceInput = it },
-                        label = { Text(text = stringResource(R.string.purchase_price_label), color = TextGray) },
+                        label = { Text(text = stringResource(R.string.purchase_price_label), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)) },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = FarmGreen,
-                            unfocusedBorderColor = BorderGray,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                         ),
                         singleLine = true
                     )
@@ -1098,12 +1141,12 @@ fun LivestockTab(viewModel: FarmViewModel) {
                     OutlinedTextField(
                         value = pDateInput,
                         onValueChange = { pDateInput = it },
-                        label = { Text(text = stringResource(R.string.purchase_date_label), color = TextGray) },
+                        label = { Text(text = stringResource(R.string.purchase_date_label), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)) },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = FarmGreen,
-                            unfocusedBorderColor = BorderGray,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                         ),
                         singleLine = true
                     )
@@ -1115,7 +1158,7 @@ fun LivestockTab(viewModel: FarmViewModel) {
                         OutlinedButton(
                             onClick = { showAddAnimalDialog = false },
                             modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
                         ) {
                             Text(text = stringResource(R.string.cancel))
                         }
@@ -1230,8 +1273,8 @@ fun HealthTab(viewModel: FarmViewModel) {
         // Compliance Report Ring
         item {
             Card(
-                colors = CardDefaults.cardColors(containerColor = SlateCardDark),
-                border = BorderStroke(1.dp, BorderGray)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
             ) {
                 Row(
                     modifier = Modifier
@@ -1240,11 +1283,12 @@ fun HealthTab(viewModel: FarmViewModel) {
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    val outlineColor = MaterialTheme.colorScheme.outline
                     // Custom Canvas Compliance ring
                     Canvas(modifier = Modifier.size(70.dp)) {
                         // Background circle
                         drawCircle(
-                            color = BorderGray,
+                            color = outlineColor,
                             radius = size.minDimension / 2,
                             style = Stroke(width = 8.dp.toPx())
                         )
@@ -1259,7 +1303,7 @@ fun HealthTab(viewModel: FarmViewModel) {
                     }
 
                     Column {
-                        Text(text = stringResource(R.string.vaccine_compliance), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Text(text = stringResource(R.string.vaccine_compliance), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                         Text(
                             text = stringResource(R.string.compliance_rate_format, "${String.format("%.1f", compliancePct)}%"),
                             color = FarmGreenLight,
@@ -1268,7 +1312,7 @@ fun HealthTab(viewModel: FarmViewModel) {
                         )
                         Text(
                             text = stringResource(R.string.health_records_summary, totalAdministered, totalAnimals),
-                            color = TextGray,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                             fontSize = 11.sp
                         )
                     }
@@ -1280,7 +1324,7 @@ fun HealthTab(viewModel: FarmViewModel) {
         item {
             Text(
                 text = "📜 " + stringResource(R.string.routine_health_logs),
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -1288,9 +1332,9 @@ fun HealthTab(viewModel: FarmViewModel) {
 
         if (vRecords.isEmpty() && dRecords.isEmpty()) {
             item {
-                Card(colors = CardDefaults.cardColors(containerColor = SlateCardDark)) {
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                     Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                        Text(text = stringResource(R.string.no_medical_records), color = TextGray)
+                        Text(text = stringResource(R.string.no_medical_records), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
                     }
                 }
             }
@@ -1304,8 +1348,8 @@ fun HealthTab(viewModel: FarmViewModel) {
         items(combinedLogs) { log ->
             val animalTag = animals.find { it.id == log.third }?.tagNumber ?: "Unknown (#${log.third})"
             Card(
-                colors = CardDefaults.cardColors(containerColor = SlateCardDark),
-                border = BorderStroke(1.dp, BorderGray)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
             ) {
                 Row(
                     modifier = Modifier
@@ -1320,8 +1364,8 @@ fun HealthTab(viewModel: FarmViewModel) {
                             "DEWORM" -> stringResource(R.string.dewormed_format, log.second.second)
                             else -> ""
                         }
-                        Text(textStr, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        Text(text = stringResource(R.string.target_livestock_format, animalTag), color = TextGray, fontSize = 11.sp)
+                        Text(textStr, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Text(text = stringResource(R.string.target_livestock_format, animalTag), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 11.sp)
                     }
                     Text(log.first, color = FarmAccent, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
@@ -1333,7 +1377,7 @@ fun HealthTab(viewModel: FarmViewModel) {
     if (showVaccineDialog && animals.isNotEmpty()) {
         Dialog(onDismissRequest = { showVaccineDialog = false }) {
             Card(
-                colors = CardDefaults.cardColors(containerColor = SlateCardDark),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 border = BorderStroke(2.dp, FarmGreen),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1343,14 +1387,14 @@ fun HealthTab(viewModel: FarmViewModel) {
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    Text(text = stringResource(R.string.title_log_vaccination), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                    Text(text = stringResource(R.string.title_log_vaccination), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
 
                     // Animal Selector Dropdown Trigger
                     var targetAnimalTag = animals.find { it.id == targetAnimalId }?.tagNumber ?: "Select Animal"
                     Box(modifier = Modifier.fillMaxWidth()) {
                         Button(
                             onClick = { dropdownExpanded = true },
-                            colors = ButtonDefaults.buttonColors(containerColor = SlateDark),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.background, contentColor = MaterialTheme.colorScheme.onBackground),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(text = stringResource(R.string.animal_format, targetAnimalTag))
@@ -1358,11 +1402,11 @@ fun HealthTab(viewModel: FarmViewModel) {
                         DropdownMenu(
                             expanded = dropdownExpanded,
                             onDismissRequest = { dropdownExpanded = false },
-                            modifier = Modifier.background(SlateCardDark)
+                            modifier = Modifier.background(MaterialTheme.colorScheme.surface)
                         ) {
                             animals.forEach { animal ->
                                 DropdownMenuItem(
-                                    text = { Text(animal.tagNumber, color = Color.White) },
+                                    text = { Text(animal.tagNumber, color = MaterialTheme.colorScheme.onSurface) },
                                     onClick = {
                                         targetAnimalId = animal.id
                                         dropdownExpanded = false
@@ -1375,12 +1419,12 @@ fun HealthTab(viewModel: FarmViewModel) {
                     OutlinedTextField(
                         value = vaccineNameInput,
                         onValueChange = { vaccineNameInput = it },
-                        label = { Text(text = stringResource(R.string.vaccine_name_label), color = TextGray) },
+                        label = { Text(text = stringResource(R.string.vaccine_name_label), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)) },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = FarmGreen,
-                            unfocusedBorderColor = BorderGray,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                         ),
                         singleLine = true
                     )
@@ -1388,12 +1432,12 @@ fun HealthTab(viewModel: FarmViewModel) {
                     OutlinedTextField(
                         value = notesInput,
                         onValueChange = { notesInput = it },
-                        label = { Text(text = stringResource(R.string.notes_label), color = TextGray) },
+                        label = { Text(text = stringResource(R.string.notes_label), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)) },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = FarmGreen,
-                            unfocusedBorderColor = BorderGray,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                         )
                     )
 
@@ -1404,7 +1448,7 @@ fun HealthTab(viewModel: FarmViewModel) {
                         OutlinedButton(
                             onClick = { showVaccineDialog = false },
                             modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
                         ) {
                             Text(text = stringResource(R.string.cancel))
                         }
@@ -1432,7 +1476,7 @@ fun HealthTab(viewModel: FarmViewModel) {
     if (showDewormDialog && animals.isNotEmpty()) {
         Dialog(onDismissRequest = { showDewormDialog = false }) {
             Card(
-                colors = CardDefaults.cardColors(containerColor = SlateCardDark),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 border = BorderStroke(2.dp, FarmGreen),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1442,14 +1486,14 @@ fun HealthTab(viewModel: FarmViewModel) {
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    Text(text = stringResource(R.string.title_log_deworming), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                    Text(text = stringResource(R.string.title_log_deworming), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
 
                     // Animal Selector
                     var targetAnimalTag = animals.find { it.id == targetAnimalId }?.tagNumber ?: "Select Animal"
                     Box(modifier = Modifier.fillMaxWidth()) {
                         Button(
                             onClick = { dropdownExpanded = true },
-                            colors = ButtonDefaults.buttonColors(containerColor = SlateDark),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.background, contentColor = MaterialTheme.colorScheme.onBackground),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(text = stringResource(R.string.animal_format, targetAnimalTag))
@@ -1457,11 +1501,11 @@ fun HealthTab(viewModel: FarmViewModel) {
                         DropdownMenu(
                             expanded = dropdownExpanded,
                             onDismissRequest = { dropdownExpanded = false },
-                            modifier = Modifier.background(SlateCardDark)
+                            modifier = Modifier.background(MaterialTheme.colorScheme.surface)
                         ) {
                             animals.forEach { animal ->
                                 DropdownMenuItem(
-                                    text = { Text(animal.tagNumber, color = Color.White) },
+                                    text = { Text(animal.tagNumber, color = MaterialTheme.colorScheme.onSurface) },
                                     onClick = {
                                         targetAnimalId = animal.id
                                         dropdownExpanded = false
@@ -1474,12 +1518,12 @@ fun HealthTab(viewModel: FarmViewModel) {
                     OutlinedTextField(
                         value = dewormDrugInput,
                         onValueChange = { dewormDrugInput = it },
-                        label = { Text(text = stringResource(R.string.deworm_drug_label), color = TextGray) },
+                        label = { Text(text = stringResource(R.string.deworm_drug_label), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)) },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = FarmGreen,
-                            unfocusedBorderColor = BorderGray,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                         ),
                         singleLine = true
                     )
@@ -1487,12 +1531,12 @@ fun HealthTab(viewModel: FarmViewModel) {
                     OutlinedTextField(
                         value = notesInput,
                         onValueChange = { notesInput = it },
-                        label = { Text(text = stringResource(R.string.deworm_notes_label), color = TextGray) },
+                        label = { Text(text = stringResource(R.string.deworm_notes_label), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)) },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = FarmGreen,
-                            unfocusedBorderColor = BorderGray,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                         )
                     )
 
@@ -1503,7 +1547,7 @@ fun HealthTab(viewModel: FarmViewModel) {
                         OutlinedButton(
                             onClick = { showDewormDialog = false },
                             modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
                         ) {
                             Text(text = stringResource(R.string.cancel))
                         }
@@ -1573,7 +1617,7 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = stringResource(R.string.breeding_schedules_title), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text(text = stringResource(R.string.breeding_schedules_title), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 Button(
                     onClick = {
                         val females = animals.filter { it.gender == Gender.FEMALE && it.ageCategory == AgeCategory.ADULT }
@@ -1594,9 +1638,9 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
         // Breeding Records
         if (breedingList.isEmpty()) {
             item {
-                Card(colors = CardDefaults.cardColors(containerColor = SlateCardDark)) {
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                     Box(modifier = Modifier.fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) {
-                        Text(text = stringResource(R.string.no_breeding_campaigns), color = TextGray, fontSize = 12.sp)
+                        Text(text = stringResource(R.string.no_breeding_campaigns), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 12.sp)
                     }
                 }
             }
@@ -1606,8 +1650,8 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
                 val maleTag = animals.find { it.id == record.maleId }?.tagNumber ?: "Male #${record.maleId}"
 
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = SlateCardDark),
-                    border = BorderStroke(1.dp, BorderGray)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Row(
@@ -1615,7 +1659,7 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(text = stringResource(R.string.breeding_pairing_format, femaleTag, maleTag), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            Text(text = stringResource(R.string.breeding_pairing_format, femaleTag, maleTag), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(4.dp))
@@ -1633,7 +1677,7 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
                                     color = when (record.status) {
                                         PregnancyStatus.PREGNANT -> OrangeAlert
                                         PregnancyStatus.LAMBED, PregnancyStatus.KIDDED -> FarmGreenLight
-                                        else -> TextGray
+                                        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                                     },
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold
@@ -1642,7 +1686,7 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
                         }
 
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text(text = stringResource(R.string.breeding_date_format, record.breedingDate), color = TextGray, fontSize = 12.sp)
+                        Text(text = stringResource(R.string.breeding_date_format, record.breedingDate), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 12.sp)
                         Text(text = stringResource(R.string.expected_delivery_format, record.expectedDeliveryDate), color = FarmAccent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
 
                         if (record.status == PregnancyStatus.PREGNANT) {
@@ -1681,7 +1725,7 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = stringResource(R.string.feed_inventory_title), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text(text = stringResource(R.string.feed_inventory_title), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 Button(
                     onClick = {
                         if (feedList.isNotEmpty()) {
@@ -1699,11 +1743,11 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
         // Feed stocks
         item {
             Card(
-                colors = CardDefaults.cardColors(containerColor = SlateCardDark),
-                border = BorderStroke(1.dp, BorderGray)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    Text(text = stringResource(R.string.stock_levels_title), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    Text(text = stringResource(R.string.stock_levels_title), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     Spacer(modifier = Modifier.height(6.dp))
                     feedList.forEach { feed ->
                         val isLow = feed.quantityInStock <= feed.lowStockThreshold
@@ -1714,7 +1758,7 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(feed.feedName, color = Color.White, fontSize = 12.sp)
+                            Text(feed.feedName, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp)
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Text(
                                     "${feed.quantityInStock} ${feed.unit}",
@@ -1741,18 +1785,18 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
 
         // Feed consumption log heading
         item {
-            Text(text = stringResource(R.string.consumption_logs_title), color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            Text(text = stringResource(R.string.consumption_logs_title), color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontWeight = FontWeight.Bold)
         }
 
         if (consumptionLogs.isEmpty()) {
             item {
-                Text(text = stringResource(R.string.no_consumption_logs), color = TextGray, fontSize = 12.sp)
+                Text(text = stringResource(R.string.no_consumption_logs), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 12.sp)
             }
         } else {
             items(consumptionLogs.take(3)) { log ->
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = SlateCardDark),
-                    border = BorderStroke(1.dp, BorderGray)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                 ) {
                     Row(
                         modifier = Modifier
@@ -1760,8 +1804,8 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
                             .padding(10.dp),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(text = stringResource(R.string.feed_consumed_format, log.quantityConsumed, log.feedName), color = Color.White, fontSize = 12.sp)
-                        Text(log.date, color = TextGray, fontSize = 11.sp)
+                        Text(text = stringResource(R.string.feed_consumed_format, log.quantityConsumed, log.feedName), color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp)
+                        Text(log.date, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 11.sp)
                     }
                 }
             }
@@ -1775,7 +1819,7 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
 
         Dialog(onDismissRequest = { showBreedingDialog = false }) {
             Card(
-                colors = CardDefaults.cardColors(containerColor = SlateCardDark),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 border = BorderStroke(2.dp, FarmGreen),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1785,14 +1829,14 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    Text(text = stringResource(R.string.title_log_mate), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                    Text(text = stringResource(R.string.title_log_mate), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
 
                     // Dam Selector
                     var damTag = females.find { it.id == femaleIdInput }?.tagNumber ?: "Select Dam"
                     Box(modifier = Modifier.fillMaxWidth()) {
                         Button(
                             onClick = { femaleDropdownExp = true },
-                            colors = ButtonDefaults.buttonColors(containerColor = SlateDark),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.background, contentColor = MaterialTheme.colorScheme.onBackground),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(text = stringResource(R.string.dam_format, damTag))
@@ -1800,11 +1844,11 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
                         DropdownMenu(
                             expanded = femaleDropdownExp,
                             onDismissRequest = { femaleDropdownExp = false },
-                            modifier = Modifier.background(SlateCardDark)
+                            modifier = Modifier.background(MaterialTheme.colorScheme.surface)
                         ) {
                             females.forEach { animal ->
                                 DropdownMenuItem(
-                                    text = { Text(animal.tagNumber, color = Color.White) },
+                                    text = { Text(animal.tagNumber, color = MaterialTheme.colorScheme.onSurface) },
                                     onClick = {
                                         femaleIdInput = animal.id
                                         femaleDropdownExp = false
@@ -1819,7 +1863,7 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
                     Box(modifier = Modifier.fillMaxWidth()) {
                         Button(
                             onClick = { maleDropdownExp = true },
-                            colors = ButtonDefaults.buttonColors(containerColor = SlateDark),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.background, contentColor = MaterialTheme.colorScheme.onBackground),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(text = stringResource(R.string.sire_format, sireTag))
@@ -1827,11 +1871,11 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
                         DropdownMenu(
                             expanded = maleDropdownExp,
                             onDismissRequest = { maleDropdownExp = false },
-                            modifier = Modifier.background(SlateCardDark)
+                            modifier = Modifier.background(MaterialTheme.colorScheme.surface)
                         ) {
                             males.forEach { animal ->
                                 DropdownMenuItem(
-                                    text = { Text(animal.tagNumber, color = Color.White) },
+                                    text = { Text(animal.tagNumber, color = MaterialTheme.colorScheme.onSurface) },
                                     onClick = {
                                         maleIdInput = animal.id
                                         maleDropdownExp = false
@@ -1844,12 +1888,12 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
                     OutlinedTextField(
                         value = breedingNotes,
                         onValueChange = { breedingNotes = it },
-                        label = { Text(text = stringResource(R.string.breeding_notes_label), color = TextGray) },
+                        label = { Text(text = stringResource(R.string.breeding_notes_label), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)) },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = FarmGreen,
-                            unfocusedBorderColor = BorderGray,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                         )
                     )
 
@@ -1860,7 +1904,7 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
                         OutlinedButton(
                             onClick = { showBreedingDialog = false },
                             modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
                         ) {
                             Text(text = stringResource(R.string.cancel))
                         }
@@ -1885,7 +1929,7 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
     if (showLambingDialog && selectedBreedingRecord != null) {
         Dialog(onDismissRequest = { showLambingDialog = false }) {
             Card(
-                colors = CardDefaults.cardColors(containerColor = SlateCardDark),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 border = BorderStroke(2.dp, FarmGreen),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1895,17 +1939,17 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    Text(text = stringResource(R.string.title_record_birth), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                    Text(text = stringResource(R.string.title_record_birth), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
 
                     OutlinedTextField(
                         value = deliveryDateInput,
                         onValueChange = { deliveryDateInput = it },
-                        label = { Text(text = stringResource(R.string.delivery_date_label), color = TextGray) },
+                        label = { Text(text = stringResource(R.string.delivery_date_label), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)) },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = FarmGreen,
-                            unfocusedBorderColor = BorderGray,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                         ),
                         singleLine = true
                     )
@@ -1913,12 +1957,12 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
                     OutlinedTextField(
                         value = offspringCountInput,
                         onValueChange = { offspringCountInput = it },
-                        label = { Text(text = stringResource(R.string.offspring_count_label), color = TextGray) },
+                        label = { Text(text = stringResource(R.string.offspring_count_label), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)) },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = FarmGreen,
-                            unfocusedBorderColor = BorderGray,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                         ),
                         singleLine = true
                     )
@@ -1926,12 +1970,12 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
                     OutlinedTextField(
                         value = deliveryNotes,
                         onValueChange = { deliveryNotes = it },
-                        label = { Text(text = stringResource(R.string.delivery_notes_label), color = TextGray) },
+                        label = { Text(text = stringResource(R.string.delivery_notes_label), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)) },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = FarmGreen,
-                            unfocusedBorderColor = BorderGray,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                         )
                     )
 
@@ -1942,7 +1986,7 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
                         OutlinedButton(
                             onClick = { showLambingDialog = false },
                             modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
                         ) {
                             Text(text = stringResource(R.string.cancel))
                         }
@@ -1969,7 +2013,7 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
         var dropdownExpanded by remember { mutableStateOf(false) }
         Dialog(onDismissRequest = { showFeedDialog = false }) {
             Card(
-                colors = CardDefaults.cardColors(containerColor = SlateCardDark),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 border = BorderStroke(2.dp, FarmGreen),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1979,13 +2023,13 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    Text(text = stringResource(R.string.title_feed_consumption), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                    Text(text = stringResource(R.string.title_feed_consumption), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
 
                     // Feed Selector
                     Box(modifier = Modifier.fillMaxWidth()) {
                         Button(
                             onClick = { dropdownExpanded = true },
-                            colors = ButtonDefaults.buttonColors(containerColor = SlateDark),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.background, contentColor = MaterialTheme.colorScheme.onBackground),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(text = stringResource(R.string.feed_select_format, feedNameSelect))
@@ -1993,11 +2037,11 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
                         DropdownMenu(
                             expanded = dropdownExpanded,
                             onDismissRequest = { dropdownExpanded = false },
-                            modifier = Modifier.background(SlateCardDark)
+                            modifier = Modifier.background(MaterialTheme.colorScheme.surface)
                         ) {
                             feedList.forEach { f ->
                                 DropdownMenuItem(
-                                    text = { Text(f.feedName, color = Color.White) },
+                                    text = { Text(f.feedName, color = MaterialTheme.colorScheme.onSurface) },
                                     onClick = {
                                         feedNameSelect = f.feedName
                                         dropdownExpanded = false
@@ -2010,12 +2054,12 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
                     OutlinedTextField(
                         value = feedQtyInput,
                         onValueChange = { feedQtyInput = it },
-                        label = { Text(text = stringResource(R.string.quantity_consumed_label), color = TextGray) },
+                        label = { Text(text = stringResource(R.string.quantity_consumed_label), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)) },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = FarmGreen,
-                            unfocusedBorderColor = BorderGray,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                         ),
                         singleLine = true
                     )
@@ -2027,7 +2071,7 @@ fun BreedingFeedTab(viewModel: FarmViewModel) {
                         OutlinedButton(
                             onClick = { showFeedDialog = false },
                             modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
                         ) {
                             Text(text = stringResource(R.string.cancel))
                         }
@@ -2083,7 +2127,7 @@ fun FinancesTab(viewModel: FarmViewModel) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = stringResource(R.string.finances_title), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text(text = stringResource(R.string.finances_title), color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 Button(
                     onClick = { showTransactionDialog = true },
                     colors = ButtonDefaults.buttonColors(containerColor = FarmGreen)
@@ -2106,7 +2150,7 @@ fun FinancesTab(viewModel: FarmViewModel) {
                     border = BorderStroke(1.dp, FarmGreen)
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
-                        Text(text = stringResource(R.string.total_income_label), color = TextGray, fontSize = 11.sp)
+                        Text(text = stringResource(R.string.total_income_label), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 11.sp)
                         Text(
                             "$${String.format("%.2f", totalIncome)}",
                             color = FarmGreenLight,
@@ -2123,7 +2167,7 @@ fun FinancesTab(viewModel: FarmViewModel) {
                     border = BorderStroke(1.dp, RedAlert)
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
-                        Text(text = stringResource(R.string.total_expenses_label), color = TextGray, fontSize = 11.sp)
+                        Text(text = stringResource(R.string.total_expenses_label), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 11.sp)
                         Text(
                             "$${String.format("%.2f", totalExpense)}",
                             color = RedAlert,
@@ -2138,13 +2182,14 @@ fun FinancesTab(viewModel: FarmViewModel) {
         // Analytics Graphic: Custom Canvas Bar Graph
         item {
             Card(
-                colors = CardDefaults.cardColors(containerColor = SlateCardDark),
-                border = BorderStroke(1.dp, BorderGray)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(text = stringResource(R.string.analytics_chart_title), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text(text = stringResource(R.string.analytics_chart_title), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(16.dp))
 
+                    val baselineColor = MaterialTheme.colorScheme.outline
                     Canvas(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -2156,7 +2201,7 @@ fun FinancesTab(viewModel: FarmViewModel) {
 
                         // Draw baseline
                         drawLine(
-                            color = BorderGray,
+                            color = baselineColor,
                             start = Offset(0f, h - 20f),
                             end = Offset(w, h - 20f),
                             strokeWidth = 2f
@@ -2191,20 +2236,20 @@ fun FinancesTab(viewModel: FarmViewModel) {
 
         // Financial Ledger List
         item {
-            Text(text = stringResource(R.string.ledger_history_title), color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text(text = stringResource(R.string.ledger_history_title), color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp, fontWeight = FontWeight.Bold)
         }
 
         if (finances.isEmpty()) {
             item {
-                Text(text = stringResource(R.string.no_ledger_logs), color = TextGray, fontSize = 12.sp)
+                Text(text = stringResource(R.string.no_ledger_logs), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 12.sp)
             }
         }
 
         items(finances) { trans ->
             val isIncome = trans.type == TransactionType.INCOME
             Card(
-                colors = CardDefaults.cardColors(containerColor = SlateCardDark),
-                border = BorderStroke(1.dp, BorderGray)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
             ) {
                 Row(
                     modifier = Modifier
@@ -2214,8 +2259,8 @@ fun FinancesTab(viewModel: FarmViewModel) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text(trans.description, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        Text("${trans.category.name} | ${trans.date}", color = TextGray, fontSize = 11.sp)
+                        Text(trans.description, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Text("${trans.category.name} | ${trans.date}", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontSize = 11.sp)
                     }
                     Text(
                         text = if (isIncome) "+$${trans.amount}" else "-$${trans.amount}",
@@ -2232,7 +2277,7 @@ fun FinancesTab(viewModel: FarmViewModel) {
     if (showTransactionDialog) {
         Dialog(onDismissRequest = { showTransactionDialog = false }) {
             Card(
-                colors = CardDefaults.cardColors(containerColor = SlateCardDark),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 border = BorderStroke(2.dp, FarmGreen),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -2242,7 +2287,7 @@ fun FinancesTab(viewModel: FarmViewModel) {
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    Text(text = stringResource(R.string.title_add_financial_record), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                    Text(text = stringResource(R.string.title_add_financial_record), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
 
                     // Type Segmented Button
                     Row(
@@ -2252,7 +2297,7 @@ fun FinancesTab(viewModel: FarmViewModel) {
                         Button(
                             onClick = { typeSelect = TransactionType.EXPENSE },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (typeSelect == TransactionType.EXPENSE) RedAlert else SlateDark
+                                containerColor = if (typeSelect == TransactionType.EXPENSE) RedAlert else MaterialTheme.colorScheme.background, contentColor = if (typeSelect == TransactionType.EXPENSE) Color.White else MaterialTheme.colorScheme.onBackground
                             ),
                             modifier = Modifier.weight(1f)
                         ) {
@@ -2261,7 +2306,7 @@ fun FinancesTab(viewModel: FarmViewModel) {
                         Button(
                             onClick = { typeSelect = TransactionType.INCOME },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (typeSelect == TransactionType.INCOME) FarmGreen else SlateDark
+                                containerColor = if (typeSelect == TransactionType.INCOME) FarmGreen else MaterialTheme.colorScheme.background, contentColor = if (typeSelect == TransactionType.INCOME) Color.White else MaterialTheme.colorScheme.onBackground
                             ),
                             modifier = Modifier.weight(1f)
                         ) {
@@ -2273,7 +2318,7 @@ fun FinancesTab(viewModel: FarmViewModel) {
                     Box(modifier = Modifier.fillMaxWidth()) {
                         Button(
                             onClick = { categoryDropdownExp = true },
-                            colors = ButtonDefaults.buttonColors(containerColor = SlateDark),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.background, contentColor = MaterialTheme.colorScheme.onBackground),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(text = stringResource(R.string.category_select_format, categorySelect.name))
@@ -2281,11 +2326,11 @@ fun FinancesTab(viewModel: FarmViewModel) {
                         DropdownMenu(
                             expanded = categoryDropdownExp,
                             onDismissRequest = { categoryDropdownExp = false },
-                            modifier = Modifier.background(SlateCardDark)
+                            modifier = Modifier.background(MaterialTheme.colorScheme.surface)
                         ) {
                             TransactionCategory.values().forEach { cat ->
                                 DropdownMenuItem(
-                                    text = { Text(cat.name, color = Color.White) },
+                                    text = { Text(cat.name, color = MaterialTheme.colorScheme.onSurface) },
                                     onClick = {
                                         categorySelect = cat
                                         categoryDropdownExp = false
@@ -2298,12 +2343,12 @@ fun FinancesTab(viewModel: FarmViewModel) {
                     OutlinedTextField(
                         value = amountInput,
                         onValueChange = { amountInput = it },
-                        label = { Text(text = stringResource(R.string.amount_label), color = TextGray) },
+                        label = { Text(text = stringResource(R.string.amount_label), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)) },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = FarmGreen,
-                            unfocusedBorderColor = BorderGray,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                         ),
                         singleLine = true
                     )
@@ -2311,12 +2356,12 @@ fun FinancesTab(viewModel: FarmViewModel) {
                     OutlinedTextField(
                         value = descInput,
                         onValueChange = { descInput = it },
-                        label = { Text(text = stringResource(R.string.description_label), color = TextGray) },
+                        label = { Text(text = stringResource(R.string.description_label), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)) },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = FarmGreen,
-                            unfocusedBorderColor = BorderGray,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                         ),
                         singleLine = true
                     )
@@ -2328,7 +2373,7 @@ fun FinancesTab(viewModel: FarmViewModel) {
                         OutlinedButton(
                             onClick = { showTransactionDialog = false },
                             modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
                         ) {
                             Text(text = stringResource(R.string.cancel))
                         }
@@ -2372,3 +2417,4 @@ fun LocalizedApp(viewModel: FarmViewModel, content: @Composable () -> Unit) {
         content()
     }
 }
+
