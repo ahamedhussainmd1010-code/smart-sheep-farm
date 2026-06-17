@@ -419,10 +419,17 @@ fun SmartSheepFarmApp(viewModel: FarmViewModel, modifier: Modifier = Modifier) {
                                 text = stringResource(R.string.logged_in_as, user.username),
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.Bold
                             )
-
-                            Spacer(modifier = Modifier.height(2.dp))
+                            if (user.phone.isNotBlank()) {
+                                Text(
+                                    text = stringResource(R.string.phone_in_settings, user.phone),
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
                             Button(
                                 onClick = {
                                     viewModel.logout()
@@ -2622,6 +2629,7 @@ fun AuthScreen(viewModel: FarmViewModel) {
     var isSignUp by remember { mutableStateOf(false) }
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
+    var phone by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isPasswordVisible by remember { mutableStateOf(false) }
 
@@ -2813,6 +2821,21 @@ fun AuthScreen(viewModel: FarmViewModel) {
                             ),
                             modifier = Modifier.fillMaxWidth()
                         )
+
+                        OutlinedTextField(
+                            value = phone,
+                            onValueChange = { phone = it },
+                            label = { Text(stringResource(R.string.phone_label)) },
+                            singleLine = true,
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                                keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone
+                            ),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = FarmGreen,
+                                focusedLabelColor = FarmGreenLight
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
 
                     OutlinedTextField(
@@ -2856,7 +2879,7 @@ fun AuthScreen(viewModel: FarmViewModel) {
                     Button(
                         onClick = {
                             if (isSignUp) {
-                                viewModel.signup(username, email, password)
+                                viewModel.signup(username, email, phone, password)
                             } else {
                                 viewModel.login(username, password)
                             }

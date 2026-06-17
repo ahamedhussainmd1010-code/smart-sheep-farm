@@ -11,7 +11,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
     companion object {
         private const val TAG = "DatabaseHelper"
         private const val DATABASE_NAME = "smart_sheep_farm.db"
-        private const val DATABASE_VERSION = 2
+        private const val DATABASE_VERSION = 3
 
         // Table Names
         private const val TABLE_ANIMALS = "animals"
@@ -31,6 +31,8 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         private const val KEY_USER_NAME = "username"
         private const val KEY_USER_PASSWORD_HASH = "password_hash"
         private const val KEY_USER_EMAIL = "email"
+        private const val KEY_USER_PHONE = "phone"
+
 
 
         // Animals Columns
@@ -174,7 +176,8 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + KEY_USER_NAME + " TEXT UNIQUE,"
                 + KEY_USER_PASSWORD_HASH + " TEXT,"
-                + KEY_USER_EMAIL + " TEXT" + ")")
+                + KEY_USER_EMAIL + " TEXT,"
+                + KEY_USER_PHONE + " TEXT" + ")")
         db.execSQL(createUsersTable)
 
         // Seed data
@@ -411,6 +414,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             put(KEY_USER_NAME, "admin")
             put(KEY_USER_PASSWORD_HASH, hashPassword("admin123"))
             put(KEY_USER_EMAIL, "admin@sheepfarm.com")
+            put(KEY_USER_PHONE, "+91 98765 43210")
         }
         db.insert(TABLE_USERS, null, adminUser)
     }
@@ -791,11 +795,12 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         }
     }
 
-    fun registerUser(username: String, email: String, password: String): Long {
+    fun registerUser(username: String, email: String, phone: String, password: String): Long {
         val db = this.writableDatabase
         val values = ContentValues().apply {
             put(KEY_USER_NAME, username.trim())
             put(KEY_USER_EMAIL, email.trim())
+            put(KEY_USER_PHONE, phone.trim())
             put(KEY_USER_PASSWORD_HASH, hashPassword(password))
         }
         return db.insert(TABLE_USERS, null, values)
@@ -814,7 +819,8 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 id = cursor.getLong(cursor.getColumnIndexOrThrow(KEY_ID)),
                 username = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_NAME)),
                 passwordHash = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_PASSWORD_HASH)),
-                email = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_EMAIL))
+                email = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_EMAIL)),
+                phone = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_PHONE))
             )
         }
         cursor.close()
@@ -833,7 +839,8 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 id = cursor.getLong(cursor.getColumnIndexOrThrow(KEY_ID)),
                 username = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_NAME)),
                 passwordHash = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_PASSWORD_HASH)),
-                email = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_EMAIL))
+                email = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_EMAIL)),
+                phone = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_PHONE))
             )
         }
         cursor.close()

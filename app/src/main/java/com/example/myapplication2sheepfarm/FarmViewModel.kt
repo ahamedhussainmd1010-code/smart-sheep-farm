@@ -159,7 +159,7 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun signup(username: String, email: String, password: String) {
+    fun signup(username: String, email: String, phone: String, password: String) {
         viewModelScope.launch {
             _loginError.value = null
             _signupSuccess.value = false
@@ -175,7 +175,7 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
                 _loginError.value = "Username already exists"
                 return@launch
             }
-            val result = dbHelper.registerUser(username, email, password)
+            val result = dbHelper.registerUser(username, email, phone, password)
             if (result != -1L) {
                 _signupSuccess.value = true
                 // Trigger welcome email dispatch notification

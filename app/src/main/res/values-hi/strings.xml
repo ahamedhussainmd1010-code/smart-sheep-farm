@@ -134,5 +134,8 @@
     <string name="already_have_account">पहले से ही खाता है? साइन इन करें</string>
     <string name="logout_button">लॉग आउट करें</string>
     <string name="logged_in_as">इस रूप में लॉग इन हैं: %s</string>
+    <string name="phone_label">फ़ोन नंबर</string>
+    <string name="phone_in_settings">फ़ोन: %s</string>
 </resources>
+
 

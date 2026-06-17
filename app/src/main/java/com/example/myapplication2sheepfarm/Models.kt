@@ -109,6 +109,8 @@ data class User(
     val id: Long = 0L,
     val username: String,
     val passwordHash: String,
-    val email: String
+    val email: String,
+    val phone: String
 )
+
 

@@ -134,5 +134,8 @@
     <string name="already_have_account">ఇప్పటికే ఖాతా ఉందా? సైన్ ఇన్ చేయండి</string>
     <string name="logout_button">లాగ్ అవుట్</string>
     <string name="logged_in_as">లాగిన్ అయిన యూజర్: %s</string>
+    <string name="phone_label">ఫోన్ నంబర్</string>
+    <string name="phone_in_settings">ఫోన్: %s</string>
 </resources>
+
 

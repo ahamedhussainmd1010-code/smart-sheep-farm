@@ -134,4 +134,6 @@
     <string name="already_have_account">Already have an account? Sign In</string>
     <string name="logout_button">Log Out</string>
     <string name="logged_in_as">Logged in as: %s</string>
+    <string name="phone_label">Phone Number</string>
+    <string name="phone_in_settings">Phone: %s</string>
 </resources>
