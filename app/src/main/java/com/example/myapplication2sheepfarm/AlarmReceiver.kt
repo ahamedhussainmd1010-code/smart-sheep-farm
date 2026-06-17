@@ -203,47 +203,47 @@ class AlarmReceiver : BroadcastReceiver() {
         }
     }
 
-    private fun postSystemNotification(context: Context, id: String, title: String, message: String) {
-        if (Build.VERSION.SDK_INT >= 33) {
-            if (context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                return
-            }
-        }
-
-        try {
-            val intent = Intent(context, MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            }
-            val pendingIntent = PendingIntent.getActivity(
-                context,
-                id.hashCode(),
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-
-            val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-            val builder = NotificationCompat.Builder(context, "farm_alerts_channel_v3")
-                .setSmallIcon(context.resources.getIdentifier("ic_launcher_foreground", "drawable", context.packageName).let { if (it != 0) it else android.R.drawable.ic_dialog_info })
-                .setContentTitle(title)
-                .setContentText(message)
-                .setStyle(NotificationCompat.BigTextStyle().bigText(message))
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setSound(soundUri)
-                .setDefaults(NotificationCompat.DEFAULT_ALL)
-                .setContentIntent(pendingIntent)
-                .setAutoCancel(true)
-
-            val notificationManager = NotificationManagerCompat.from(context)
-            notificationManager.notify(id.hashCode(), builder.build())
-            Log.i("AlarmReceiver", "Successfully posted system notification for alert ID: $id")
-        } catch (e: SecurityException) {
-            Log.e("AlarmReceiver", "SecurityException posting notification: ${e.message}")
-        } catch (e: Exception) {
-            Log.e("AlarmReceiver", "Error posting notification: ${e.message}")
-        }
-    }
-
     companion object {
+        fun postSystemNotification(context: Context, id: String, title: String, message: String) {
+            if (Build.VERSION.SDK_INT >= 33) {
+                if (context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                    return
+                }
+            }
+
+            try {
+                val intent = Intent(context, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                }
+                val pendingIntent = PendingIntent.getActivity(
+                    context,
+                    id.hashCode(),
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+
+                val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                val builder = NotificationCompat.Builder(context, "farm_alerts_channel_v3")
+                    .setSmallIcon(context.resources.getIdentifier("ic_launcher_foreground", "drawable", context.packageName).let { if (it != 0) it else android.R.drawable.ic_dialog_info })
+                    .setContentTitle(title)
+                    .setContentText(message)
+                    .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setSound(soundUri)
+                    .setDefaults(NotificationCompat.DEFAULT_ALL)
+                    .setContentIntent(pendingIntent)
+                    .setAutoCancel(true)
+
+                val notificationManager = NotificationManagerCompat.from(context)
+                notificationManager.notify(id.hashCode(), builder.build())
+                Log.i("AlarmReceiver", "Successfully posted system notification for alert ID: $id")
+            } catch (e: SecurityException) {
+                Log.e("AlarmReceiver", "SecurityException posting notification: ${e.message}")
+            } catch (e: Exception) {
+                Log.e("AlarmReceiver", "Error posting notification: ${e.message}")
+            }
+        }
+
         fun scheduleAlarm(context: Context) {
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
             val intent = Intent(context, AlarmReceiver::class.java)
@@ -254,7 +254,6 @@ class AlarmReceiver : BroadcastReceiver() {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 
-            // Trigger alarm 5 seconds from now, then run periodically every hour
             val triggerTime = System.currentTimeMillis() + 5000
             val interval = AlarmManager.INTERVAL_HOUR
 

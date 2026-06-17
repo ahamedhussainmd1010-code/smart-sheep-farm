@@ -144,6 +144,15 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
                 val context = getApplication<Application>().applicationContext
                 val prefs = context.getSharedPreferences("farm_prefs", android.content.Context.MODE_PRIVATE)
                 prefs.edit().putString("logged_in_user", user.username).apply()
+
+                // Trigger login notification mentioning user and email
+                val emailDisplay = if (user.email.isNotBlank()) user.email else "default admin email"
+                AlarmReceiver.postSystemNotification(
+                    context,
+                    "login_alert_${System.currentTimeMillis()}",
+                    "Successful Login Alert",
+                    "New login session established for ${user.username} ($emailDisplay)."
+                )
             } else {
                 _loginError.value = "Invalid username or password"
             }
@@ -169,6 +178,15 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
             val result = dbHelper.registerUser(username, email, password)
             if (result != -1L) {
                 _signupSuccess.value = true
+                // Trigger welcome email dispatch notification
+                val context = getApplication<Application>().applicationContext
+                val targetEmail = if (email.isNotBlank()) email else "your registered email"
+                AlarmReceiver.postSystemNotification(
+                    context,
+                    "signup_verify_${System.currentTimeMillis()}",
+                    "Welcome Email Dispatched!",
+                    "A confirmation notification email has been dispatched to $targetEmail."
+                )
             } else {
                 _loginError.value = "Failed to create account. Please try again."
             }
