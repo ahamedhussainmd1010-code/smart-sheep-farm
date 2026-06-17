@@ -58,8 +58,18 @@ class MainActivity : ComponentActivity() {
             val name = "Smart Sheep Farm Alerts"
             val descriptionText = "Alerts for livestock vaccinations, deworming schedules, and low feed stock."
             val importance = android.app.NotificationManager.IMPORTANCE_DEFAULT
-            val channel = android.app.NotificationChannel("farm_alerts_channel", name, importance).apply {
+            val channel = android.app.NotificationChannel("farm_alerts_channel_v2", name, importance).apply {
                 description = descriptionText
+                // Set default system notification sound explicitly
+                val soundUri = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
+                val audioAttributes = android.media.AudioAttributes.Builder()
+                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION)
+                    .build()
+                setSound(soundUri, audioAttributes)
+                enableLights(true)
+                lightColor = android.graphics.Color.GREEN
+                enableVibration(true)
             }
             val notificationManager = getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
             notificationManager.createNotificationChannel(channel)
