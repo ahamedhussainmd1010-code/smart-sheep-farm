@@ -13,6 +13,7 @@ The application is engineered with an **offline-first architecture**, utilizing 
 ### 1. 🔔 Dashboard & Compliance Alert Center
 * **Dynamic Vaccination Schedule**: Automatically tracks the 9 essential annual livestock vaccinations (Feb, Mar, Apr, May, Jul, Aug, Sep, Oct, Nov).
 * **Smart Reminders**: Displays critical warnings (7-day heads-up, 1-day warning, and same-day alerts).
+* **System Tray & Sound Alerts**: Sends native Android status bar alerts with system sounds, haptic vibration feedback, and green LED flashing lights, fully optimized with a custom `SharedPreferences` engine to prevent duplicate/spam notifications.
 * **Missed Vaccination Alerts**: Automatically flags and logs past scheduled vaccinations where animal compliance records are missing (within a $\pm$7 day window).
 * **Deworming Compliance Alerts**: Flags scheduled vaccinations that require follow-up deworming (e.g., February, April, July, September, November events) if deworming compliance is not logged within 14 days post-vaccination.
 * **Simulated Date Tool**: A developer panel allowing the simulation of any date (e.g. July 5, October 5) to instantly check dynamic notification triggers and test scheduling logic.
