@@ -44,15 +44,20 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val currentTheme by viewModel.currentTheme.collectAsState()
+            val currentUser by viewModel.currentUser.collectAsState()
             MyApplication2Theme(theme = currentTheme) {
                 LocalizedApp(viewModel) {
-                    Scaffold(
-                        modifier = Modifier.fillMaxSize(),
-                        bottomBar = {
-                            // Managed inside main app
+                    if (currentUser == null) {
+                        AuthScreen(viewModel)
+                    } else {
+                        Scaffold(
+                            modifier = Modifier.fillMaxSize(),
+                            bottomBar = {
+                                // Managed inside main app
+                            }
+                        ) { innerPadding ->
+                            SmartSheepFarmApp(viewModel, modifier = Modifier.padding(innerPadding))
                         }
-                    ) { innerPadding ->
-                        SmartSheepFarmApp(viewModel, modifier = Modifier.padding(innerPadding))
                     }
                 }
             }
@@ -344,6 +349,47 @@ fun SmartSheepFarmApp(viewModel: FarmViewModel, modifier: Modifier = Modifier) {
                                     fontSize = 12.sp,
                                     fontWeight = if (tempTheme == themeOpt) FontWeight.Bold else FontWeight.Normal,
                                     textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+                    }
+
+                    val currentUser by viewModel.currentUser.collectAsState()
+                    currentUser?.let { user ->
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(1.dp)
+                                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                                .padding(vertical = 8.dp)
+                        )
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.logged_in_as, user.username),
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Button(
+                                onClick = {
+                                    viewModel.logout()
+                                    showSettingsDialog = false
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(containerColor = RedAlert),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(vertical = 8.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.logout_button),
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
                                 )
                             }
                         }
@@ -2518,4 +2564,283 @@ fun LocalizedApp(viewModel: FarmViewModel, content: @Composable () -> Unit) {
         content()
     }
 }
+
+@Composable
+fun AuthScreen(viewModel: FarmViewModel) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val loginError by viewModel.loginError.collectAsState()
+    val signupSuccess by viewModel.signupSuccess.collectAsState()
+
+    var isSignUp by remember { mutableStateOf(false) }
+    var username by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var isPasswordVisible by remember { mutableStateOf(false) }
+
+    val currentLanguage by viewModel.currentLanguage.collectAsState()
+    val currentTheme by viewModel.currentTheme.collectAsState()
+
+    LaunchedEffect(isSignUp) {
+        viewModel.clearLoginError()
+    }
+
+    LaunchedEffect(signupSuccess) {
+        if (signupSuccess) {
+            android.widget.Toast.makeText(context, "Account created successfully! Please Sign In.", android.widget.Toast.LENGTH_LONG).show()
+            isSignUp = false
+            viewModel.resetSignupSuccess()
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        MaterialTheme.colorScheme.background,
+                        FarmGreen.copy(alpha = 0.15f)
+                    )
+                )
+            )
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+        ) {
+            // Language & Theme Quick Selector Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Language cycle button
+                TextButton(
+                    onClick = {
+                        val nextLang = when (currentLanguage) {
+                            AppLanguage.ENGLISH -> AppLanguage.HINDI
+                            AppLanguage.HINDI -> AppLanguage.TELUGU
+                            AppLanguage.TELUGU -> AppLanguage.ENGLISH
+                        }
+                        viewModel.setLanguage(nextLang)
+                    }
+                ) {
+                    Text(
+                        text = "🌐 " + when (currentLanguage) {
+                            AppLanguage.ENGLISH -> "English"
+                            AppLanguage.HINDI -> "हिंदी"
+                            AppLanguage.TELUGU -> "తెలుగు"
+                        },
+                        fontSize = 11.sp,
+                        color = FarmGreenLight,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                // Theme toggle button
+                IconButton(
+                    onClick = {
+                        val nextTheme = when (currentTheme) {
+                            AppTheme.SYSTEM -> AppTheme.LIGHT
+                            AppTheme.LIGHT -> AppTheme.DARK
+                            AppTheme.DARK -> AppTheme.SYSTEM
+                        }
+                        viewModel.setTheme(nextTheme)
+                    },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Text(
+                        text = when (currentTheme) {
+                            AppTheme.SYSTEM -> "⚙️"
+                            AppTheme.LIGHT -> "☀️"
+                            AppTheme.DARK -> "🌙"
+                        },
+                        fontSize = 16.sp
+                    )
+                }
+            }
+
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(2.dp, FarmGreen),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Premium Header Image
+                    androidx.compose.foundation.Image(
+                        painter = androidx.compose.ui.res.painterResource(id = R.drawable.real_sheep),
+                        contentDescription = "Real Sheep Header",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(130.dp)
+                            .clip(RoundedCornerShape(12.dp)),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                    )
+
+                    Text(
+                        text = stringResource(if (isSignUp) R.string.signup_title else R.string.login_title),
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Black,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    // Sign In vs Sign Up Tab Row
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(40.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.background)
+                            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .clip(RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp))
+                                .background(if (!isSignUp) FarmGreen else Color.Transparent)
+                                .clickable { isSignUp = false },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Sign In",
+                                color = if (!isSignUp) Color.White else MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .clip(RoundedCornerShape(topEnd = 8.dp, bottomEnd = 8.dp))
+                                .background(if (isSignUp) FarmGreen else Color.Transparent)
+                                .clickable { isSignUp = true },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Create Account",
+                                color = if (isSignUp) Color.White else MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+
+                    // Input Form Fields
+                    OutlinedTextField(
+                        value = username,
+                        onValueChange = { username = it },
+                        label = { Text(stringResource(R.string.username_label)) },
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = FarmGreen,
+                            focusedLabelColor = FarmGreenLight
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    if (isSignUp) {
+                        OutlinedTextField(
+                            value = email,
+                            onValueChange = { email = it },
+                            label = { Text(stringResource(R.string.email_label)) },
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = FarmGreen,
+                                focusedLabelColor = FarmGreenLight
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = { Text(stringResource(R.string.password_label)) },
+                        singleLine = true,
+                        visualTransformation = if (isPasswordVisible) androidx.compose.ui.text.input.VisualTransformation.None else androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                        trailingIcon = {
+                            TextButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+                                Text(
+                                    text = if (isPasswordVisible) "Hide" else "Show",
+                                    color = FarmGreenLight,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.sp
+                                )
+                            }
+                        },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = FarmGreen,
+                            focusedLabelColor = FarmGreenLight
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    // Error Box if any
+                    loginError?.let { err ->
+                        Text(
+                            text = err,
+                            color = RedAlert,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Submit Action Button
+                    Button(
+                        onClick = {
+                            if (isSignUp) {
+                                viewModel.signup(username, email, password)
+                            } else {
+                                viewModel.login(username, password)
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = FarmGreen),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                    ) {
+                        Text(
+                            text = stringResource(if (isSignUp) R.string.signup_button else R.string.login_button),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = Color.White
+                        )
+                    }
+
+                    // Bottom helper link
+                    Text(
+                        text = stringResource(if (isSignUp) R.string.already_have_account else R.string.dont_have_account),
+                        color = FarmGreenLight,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier
+                            .clickable { isSignUp = !isSignUp }
+                            .padding(vertical = 4.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
 

@@ -123,4 +123,16 @@
     <string name="description_label">వివరణ</string>
     <string name="log_ledger_label">ఖాతా నమోదు</string>
     <string name="bulk_deals_title">బల్క్ మేత డీల్స్ &amp; స్పెషల్స్</string>
+    <string name="login_title">ఫామ్‌లోకి లాగిన్ అవ్వండి</string>
+    <string name="signup_title">కొత్త ఖాతాను సృష్టించండి</string>
+    <string name="username_label">యూజర్‌నేమ్</string>
+    <string name="password_label">పాస్‌వర్డ్</string>
+    <string name="email_label">ఈమెయిల్ (ఐచ్ఛికం)</string>
+    <string name="login_button">లాగిన్</string>
+    <string name="signup_button">రిజిస్టర్</string>
+    <string name="dont_have_account">ఖాతా లేదా? సైన్ అప్ చేయండి</string>
+    <string name="already_have_account">ఇప్పటికే ఖాతా ఉందా? సైన్ ఇన్ చేయండి</string>
+    <string name="logout_button">లాగ్ అవుట్</string>
+    <string name="logged_in_as">లాగిన్ అయిన యూజర్: %s</string>
 </resources>
+

@@ -123,4 +123,16 @@
     <string name="description_label">विवरण</string>
     <string name="log_ledger_label">बहीखाता दर्ज करें</string>
     <string name="bulk_deals_title">थोक चारा सौदे और विशेष</string>
+    <string name="login_title">फार्म में लॉग इन करें</string>
+    <string name="signup_title">नया खाता बनाएं</string>
+    <string name="username_label">उपयोगकर्ता नाम</string>
+    <string name="password_label">पासवर्ड</string>
+    <string name="email_label">ईमेल (वैकल्पिक)</string>
+    <string name="login_button">लॉग इन करें</string>
+    <string name="signup_button">रजिस्टर करें</string>
+    <string name="dont_have_account">खाता नहीं है? साइन अप करें</string>
+    <string name="already_have_account">पहले से ही खाता है? साइन इन करें</string>
+    <string name="logout_button">लॉग आउट करें</string>
+    <string name="logged_in_as">इस रूप में लॉग इन हैं: %s</string>
 </resources>
+

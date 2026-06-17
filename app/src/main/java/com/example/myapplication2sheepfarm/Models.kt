@@ -104,3 +104,11 @@ data class FinancialRecord(
     val date: String, // YYYY-MM-DD
     val description: String
 )
+
+data class User(
+    val id: Long = 0L,
+    val username: String,
+    val passwordHash: String,
+    val email: String
+)
+

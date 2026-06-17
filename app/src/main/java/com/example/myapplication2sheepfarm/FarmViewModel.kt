@@ -76,6 +76,16 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
     private val _currentTheme = MutableStateFlow(AppTheme.SYSTEM)
     val currentTheme: StateFlow<AppTheme> = _currentTheme.asStateFlow()
 
+    // Authentication States
+    private val _currentUser = MutableStateFlow<User?>(null)
+    val currentUser: StateFlow<User?> = _currentUser.asStateFlow()
+
+    private val _loginError = MutableStateFlow<String?>(null)
+    val loginError: StateFlow<String?> = _loginError.asStateFlow()
+
+    private val _signupSuccess = MutableStateFlow<Boolean>(false)
+    val signupSuccess: StateFlow<Boolean> = _signupSuccess.asStateFlow()
+
     // Connection Sync State simulation
     private val _isOnline = MutableStateFlow(true)
     val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
@@ -84,6 +94,7 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
     val syncMessage: StateFlow<String> = _syncMessage.asStateFlow()
 
     // List of annual schedules
+
     val annualSchedules = listOf(
         VaccinationSchedule("02-05", "FMD Vaccination", "Foot and Mouth Disease", true),
         VaccinationSchedule("03-05", "Sheep & Goat Pox Vaccination", "Capripoxvirus (Pox)", false),
@@ -100,8 +111,87 @@ class FarmViewModel(application: Application) : AndroidViewModel(application) {
         loadLanguagePreference()
         loadThemePreference()
         loadSimulatedDate()
+        loadUserSession()
         loadData()
     }
+
+    private fun loadUserSession() {
+        val context = getApplication<Application>().applicationContext
+        val prefs = context.getSharedPreferences("farm_prefs", android.content.Context.MODE_PRIVATE)
+        val username = prefs.getString("logged_in_user", null)
+        if (username != null) {
+            viewModelScope.launch {
+                val user = dbHelper.getUserByUsername(username)
+                if (user != null) {
+                    _currentUser.value = user
+                } else {
+                    prefs.edit().remove("logged_in_user").apply()
+                }
+            }
+        }
+    }
+
+    fun login(username: String, password: String) {
+        viewModelScope.launch {
+            _loginError.value = null
+            if (username.isBlank() || password.isBlank()) {
+                _loginError.value = "Username and password cannot be empty"
+                return@launch
+            }
+            val user = dbHelper.authenticateUser(username, password)
+            if (user != null) {
+                _currentUser.value = user
+                val context = getApplication<Application>().applicationContext
+                val prefs = context.getSharedPreferences("farm_prefs", android.content.Context.MODE_PRIVATE)
+                prefs.edit().putString("logged_in_user", user.username).apply()
+            } else {
+                _loginError.value = "Invalid username or password"
+            }
+        }
+    }
+
+    fun signup(username: String, email: String, password: String) {
+        viewModelScope.launch {
+            _loginError.value = null
+            _signupSuccess.value = false
+            if (username.isBlank() || password.isBlank()) {
+                _loginError.value = "Username and password cannot be empty"
+                return@launch
+            }
+            if (password.length < 6) {
+                _loginError.value = "Password must be at least 6 characters"
+                return@launch
+            }
+            if (dbHelper.isUserExists(username)) {
+                _loginError.value = "Username already exists"
+                return@launch
+            }
+            val result = dbHelper.registerUser(username, email, password)
+            if (result != -1L) {
+                _signupSuccess.value = true
+            } else {
+                _loginError.value = "Failed to create account. Please try again."
+            }
+        }
+    }
+
+    fun logout() {
+        _currentUser.value = null
+        _loginError.value = null
+        _signupSuccess.value = false
+        val context = getApplication<Application>().applicationContext
+        val prefs = context.getSharedPreferences("farm_prefs", android.content.Context.MODE_PRIVATE)
+        prefs.edit().remove("logged_in_user").apply()
+    }
+
+    fun clearLoginError() {
+        _loginError.value = null
+    }
+
+    fun resetSignupSuccess() {
+        _signupSuccess.value = false
+    }
+
 
     private fun loadLanguagePreference() {
         val context = getApplication<Application>().applicationContext

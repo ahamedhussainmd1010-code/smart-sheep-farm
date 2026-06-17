@@ -11,7 +11,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
     companion object {
         private const val TAG = "DatabaseHelper"
         private const val DATABASE_NAME = "smart_sheep_farm.db"
-        private const val DATABASE_VERSION = 1
+        private const val DATABASE_VERSION = 2
 
         // Table Names
         private const val TABLE_ANIMALS = "animals"
@@ -22,9 +22,16 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         private const val TABLE_FEED_SCHEDULES = "feed_schedules"
         private const val TABLE_FEED_CONSUMPTION = "feed_consumption"
         private const val TABLE_FINANCES = "finances"
+        private const val TABLE_USERS = "users"
 
         // Common Column
         private const val KEY_ID = "id"
+
+        // Users Columns
+        private const val KEY_USER_NAME = "username"
+        private const val KEY_USER_PASSWORD_HASH = "password_hash"
+        private const val KEY_USER_EMAIL = "email"
+
 
         // Animals Columns
         private const val KEY_ANIMAL_TAG = "tag_number"
@@ -162,6 +169,14 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 + KEY_FIN_DESC + " TEXT" + ")")
         db.execSQL(createFinancesTable)
 
+        // Create Users Table
+        val createUsersTable = ("CREATE TABLE " + TABLE_USERS + "("
+                + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + KEY_USER_NAME + " TEXT UNIQUE,"
+                + KEY_USER_PASSWORD_HASH + " TEXT,"
+                + KEY_USER_EMAIL + " TEXT" + ")")
+        db.execSQL(createUsersTable)
+
         // Seed data
         seedInitialData(db)
     }
@@ -175,8 +190,10 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         db.execSQL("DROP TABLE IF EXISTS $TABLE_FEED_SCHEDULES")
         db.execSQL("DROP TABLE IF EXISTS $TABLE_FEED_CONSUMPTION")
         db.execSQL("DROP TABLE IF EXISTS $TABLE_FINANCES")
+        db.execSQL("DROP TABLE IF EXISTS $TABLE_USERS")
         onCreate(db)
     }
+
 
     private fun seedInitialData(db: SQLiteDatabase) {
         // 1. Seed Animals
@@ -388,7 +405,16 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             }
         )
         pastDewormings.forEach { db.insert(TABLE_DEWORMINGS, null, it) }
+
+        // 8. Seed default admin user
+        val adminUser = ContentValues().apply {
+            put(KEY_USER_NAME, "admin")
+            put(KEY_USER_PASSWORD_HASH, hashPassword("admin123"))
+            put(KEY_USER_EMAIL, "admin@sheepfarm.com")
+        }
+        db.insert(TABLE_USERS, null, adminUser)
     }
+
 
     // ==========================================
     // LIVESTOCK CRUD OPERATIONS
@@ -744,4 +770,83 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         }
         return db.insert(TABLE_FINANCES, null, values)
     }
+
+    // ==========================================
+    // USER AUTHENTICATION OPERATIONS
+    // ==========================================
+
+    private fun hashPassword(password: String): String {
+        return try {
+            val digest = java.security.MessageDigest.getInstance("SHA-256")
+            val hash = digest.digest(password.toByteArray(Charsets.UTF_8))
+            val hexString = StringBuilder()
+            for (b in hash) {
+                val hex = Integer.toHexString(0xff and b.toInt())
+                if (hex.length == 1) hexString.append('0')
+                hexString.append(hex)
+            }
+            hexString.toString()
+        } catch (ex: Exception) {
+            password
+        }
+    }
+
+    fun registerUser(username: String, email: String, password: String): Long {
+        val db = this.writableDatabase
+        val values = ContentValues().apply {
+            put(KEY_USER_NAME, username.trim())
+            put(KEY_USER_EMAIL, email.trim())
+            put(KEY_USER_PASSWORD_HASH, hashPassword(password))
+        }
+        return db.insert(TABLE_USERS, null, values)
+    }
+
+    fun authenticateUser(username: String, password: String): User? {
+        val db = this.readableDatabase
+        val passwordHash = hashPassword(password)
+        val cursor = db.rawQuery(
+            "SELECT * FROM $TABLE_USERS WHERE $KEY_USER_NAME = ? AND $KEY_USER_PASSWORD_HASH = ?",
+            arrayOf(username.trim(), passwordHash)
+        )
+        var user: User? = null
+        if (cursor.moveToFirst()) {
+            user = User(
+                id = cursor.getLong(cursor.getColumnIndexOrThrow(KEY_ID)),
+                username = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_NAME)),
+                passwordHash = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_PASSWORD_HASH)),
+                email = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_EMAIL))
+            )
+        }
+        cursor.close()
+        return user
+    }
+
+    fun getUserByUsername(username: String): User? {
+        val db = this.readableDatabase
+        val cursor = db.rawQuery(
+            "SELECT * FROM $TABLE_USERS WHERE $KEY_USER_NAME = ?",
+            arrayOf(username.trim())
+        )
+        var user: User? = null
+        if (cursor.moveToFirst()) {
+            user = User(
+                id = cursor.getLong(cursor.getColumnIndexOrThrow(KEY_ID)),
+                username = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_NAME)),
+                passwordHash = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_PASSWORD_HASH)),
+                email = cursor.getString(cursor.getColumnIndexOrThrow(KEY_USER_EMAIL))
+            )
+        }
+        cursor.close()
+        return user
+    }
+
+    fun isUserExists(username: String): Boolean {
+        val db = this.readableDatabase
+        val cursor = db.rawQuery("SELECT 1 FROM $TABLE_USERS WHERE $KEY_USER_NAME = ?", arrayOf(username.trim()))
+        val exists = cursor.count > 0
+        cursor.close()
+        return exists
+    }
 }
+
+
